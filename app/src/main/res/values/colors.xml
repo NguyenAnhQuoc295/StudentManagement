@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="colorBackgroundWarm">#212121</color>
+    <color name="colorTextWarm">#FFFFFF</color>
+    <color name="colorHintWarm">#AFAFAF</color>
+    <color name="colorAccentWarm">#FFAB00</color>
+    <color name="colorBackgroundSepia">#3E2723</color>
+    <color name="colorAccentGolden">#FBC02D</color>
+    <color name="colorTextCream">#FFFDE7</color>
+    <color name="colorHintSepia">#A1887F</color>
+</resources>
