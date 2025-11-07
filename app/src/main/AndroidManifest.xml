@@ -27,6 +27,17 @@
             android:exported="false">
         </activity>
 
+        <activity
+            android:name=".student.AddEditStudentActivity"
+            android:exported="false">
+        </activity>
+
+        <activity
+            android:name=".student.StudentDetailsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StudentManagementApp.NoActionBar">
+        </activity>
+
     </application>
 
 </manifest>
