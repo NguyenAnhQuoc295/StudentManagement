@@ -55,7 +55,7 @@
             android:id="@+id/tvUserStatusItem"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Trạng thái: Normal"K
+            android:text="Trạng thái: Normal"
             android:textColor="@color/colorAccentGolden"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="@id/tvUserNameItem"
