@@ -8,17 +8,6 @@
     android:background="@color/colorBackgroundSepia"
     tools:context=".user.UserListFragment">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbarUserList"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/colorBackgroundSepia"
-        app:title="Quản lý Người dùng"
-        app:titleTextColor="@color/colorTextCream"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
     <androidx.appcompat.widget.SearchView
         android:id="@+id/searchViewUsers"
         android:layout_width="0dp"
@@ -27,7 +16,7 @@
         android:background="@drawable/search_view_background"
         app:queryHint="Tìm kiếm người dùng..."
         app:iconifiedByDefault="false"
-        app:layout_constraintTop_toBottomOf="@id/toolbarUserList"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -40,15 +29,18 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:listitem="@layout/item_user" /> <com.google.android.material.floatingactionbutton.FloatingActionButton
-    android:id="@+id/fabAddUser"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_margin="16dp"
-    android:src="@drawable/ic_add" app:backgroundTint="@color/colorAccentGolden"
-    app:tint="@color/colorBackgroundSepia"
-    app:layout_constraintBottom_toBottomOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    android:contentDescription="Thêm người dùng mới" />
+        tools:listitem="@layout/item_user" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddUser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="@color/colorAccentGolden"
+        app:tint="@color/colorBackgroundSepia"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:contentDescription="Thêm người dùng mới" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

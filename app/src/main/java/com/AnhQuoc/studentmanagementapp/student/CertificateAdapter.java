@@ -1,7 +1,7 @@
 package com.AnhQuoc.studentmanagementapp.student;
 
 import android.view.LayoutInflater;
-import android.view.View; // Đảm bảo đã import
+import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -12,21 +12,19 @@ import java.util.List;
 public class CertificateAdapter extends RecyclerView.Adapter<CertificateAdapter.CertificateViewHolder> {
 
     private List<Certificate> certificateList;
-
-    // === LỖI CỦA BẠN LÀ BẠN ĐÃ BỎ SÓT DÒNG NÀY ===
     private OnCertificateClickListener listener;
-    // ==========================================
+    private String userRole; // <-- THÊM BIẾN LƯU VAI TRÒ
 
-    // Interface để xử lý click
     public interface OnCertificateClickListener {
-        void onEditClick(Certificate certificate); // Khi nhấn nút Sửa
-        void onDeleteClick(Certificate certificate); // Khi nhấn nút Xóa
+        void onEditClick(Certificate certificate);
+        void onDeleteClick(Certificate certificate);
     }
 
-    // Constructor
-    public CertificateAdapter(List<Certificate> certificateList, OnCertificateClickListener listener) {
+    // Cập nhật Constructor
+    public CertificateAdapter(List<Certificate> certificateList, OnCertificateClickListener listener, String userRole) {
         this.certificateList = certificateList;
-        this.listener = listener; // Dòng này bây giờ sẽ hết báo lỗi
+        this.listener = listener;
+        this.userRole = userRole; // <-- NHẬN VAI TRÒ
     }
 
     @NonNull
@@ -48,18 +46,28 @@ public class CertificateAdapter extends RecyclerView.Adapter<CertificateAdapter.
         holder.binding.tvCertificateName.setText(certificate.getName());
         holder.binding.tvCertificateDate.setText("Ngày cấp: " + certificate.getDateIssued());
 
-        // Gán sự kiện cho 2 nút
-        holder.binding.btnEditCertificate.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onEditClick(certificate);
-            }
-        });
+        // === THỰC THI PHÂN QUYỀN ===
+        if ("Employee".equals(userRole)) {
+            holder.binding.btnEditCertificate.setVisibility(View.GONE);
+            holder.binding.btnDeleteCertificate.setVisibility(View.GONE);
+        } else {
+            // (Admin/Manager) Hiện các nút
+            holder.binding.btnEditCertificate.setVisibility(View.VISIBLE);
+            holder.binding.btnDeleteCertificate.setVisibility(View.VISIBLE);
 
-        holder.binding.btnDeleteCertificate.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onDeleteClick(certificate);
-            }
-        });
+            // Gán sự kiện (chỉ gán nếu nút hiện)
+            holder.binding.btnEditCertificate.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onEditClick(certificate);
+                }
+            });
+
+            holder.binding.btnDeleteCertificate.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onDeleteClick(certificate);
+                }
+            });
+        }
     }
 
     @Override

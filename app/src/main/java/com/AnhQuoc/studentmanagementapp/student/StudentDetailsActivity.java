@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.View;
+import android.view.View; // <-- THÊM IMPORT
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,14 +29,15 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashMap; // <-- THÊM IMPORT NÀY
-import java.util.Map; // <-- THÊM IMPORT NÀY
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class StudentDetailsActivity extends AppCompatActivity {
 
     private ActivityStudentDetailsBinding binding;
     private String currentStudentId;
+    private String currentUserRole; // <-- THÊM BIẾN LƯU VAI TRÒ
     private FirebaseFirestore db;
     private CertificateAdapter certificateAdapter;
     private List<Certificate> certificateList;
@@ -49,10 +50,15 @@ public class StudentDetailsActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         binding.toolbarDetail.setNavigationOnClickListener(v -> finish());
 
-        setupCertificateRecyclerView();
-
+        // 1. Nhận ID sinh viên VÀ Vai trò người dùng
         if (getIntent().hasExtra("STUDENT_ID")) {
             currentStudentId = getIntent().getStringExtra("STUDENT_ID");
+            currentUserRole = getIntent().getStringExtra("USER_ROLE");
+
+            if (currentUserRole == null) {
+                currentUserRole = "Employee"; // Mặc định an toàn
+            }
+
             loadStudentData(currentStudentId);
             loadCertificates(currentStudentId);
         } else {
@@ -60,18 +66,38 @@ public class StudentDetailsActivity extends AppCompatActivity {
             finish();
         }
 
+        // 2. Setup RecyclerView (truyền vai trò vào CertificateAdapter)
+        setupCertificateRecyclerView();
+
+        // 3. Setup các nút (đã bao gồm phân quyền)
         setupButtonListeners();
+
+        // 4. THỰC THI PHÂN QUYỀN
+        applyRoleBasedUI();
+    }
+
+    // HÀM MỚI: Ẩn/hiện các nút dựa trên vai trò
+    private void applyRoleBasedUI() {
+        if ("Employee".equals(currentUserRole)) {
+            // Nếu là Employee, ẩn hết các nút hành động
+            binding.btnEditStudent.setVisibility(View.GONE);
+            binding.btnDeleteStudent.setVisibility(View.GONE);
+            binding.fabAddCertificate.setVisibility(View.GONE);
+        } else {
+            // (Admin/Manager) Hiện các nút
+            binding.btnEditStudent.setVisibility(View.VISIBLE);
+            binding.btnDeleteStudent.setVisibility(View.VISIBLE);
+            binding.fabAddCertificate.setVisibility(View.VISIBLE);
+        }
     }
 
     private void setupCertificateRecyclerView() {
         certificateList = new ArrayList<>();
 
-        // === CẬP NHẬT LOGIC onEditClick ===
+        // Truyền vai trò vào CertificateAdapter
         certificateAdapter = new CertificateAdapter(certificateList, new CertificateAdapter.OnCertificateClickListener() {
-
             @Override
             public void onEditClick(Certificate certificate) {
-                // Gọi hàm hiển thị Dialog Sửa
                 showEditCertificateDialog(certificate);
             }
 
@@ -87,14 +113,32 @@ public class StudentDetailsActivity extends AppCompatActivity {
                         .setIcon(R.drawable.ic_delete)
                         .show();
             }
-        });
-        // =====================================
+        }, currentUserRole); // <-- TRUYỀN VAI TRÒ VÀO ĐÂY
 
         binding.rvCertificates.setLayoutManager(new LinearLayoutManager(this));
         binding.rvCertificates.setAdapter(certificateAdapter);
     }
 
-    // ... (Hàm setupButtonListeners, loadStudentData, deleteStudent GIỮ NGUYÊN) ...
+    // ... (Hàm loadStudentData, deleteStudent, showAddCertificateDialog,
+    //      saveCertificateToFirestore, loadCertificates, deleteCertificateFromFirestore,
+    //      showEditCertificateDialog, updateCertificateInFirestore GIỮ NGUYÊN) ...
+
+    // (Chỉ cập nhật hàm onResume)
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (currentStudentId != null) {
+            // Tải lại dữ liệu khi quay lại (nếu có sửa)
+            loadStudentData(currentStudentId);
+            loadCertificates(currentStudentId);
+        }
+    }
+
+    // ... (Toàn bộ code cũ của bạn từ
+    //      private void setupButtonListeners()
+    //      đến
+    //      private void updateCertificateInFirestore(...)
+    //      vẫn nằm ở đây) ...
     private void setupButtonListeners() {
         binding.btnDeleteStudent.setOnClickListener(v -> {
             new AlertDialog.Builder(StudentDetailsActivity.this)
@@ -145,8 +189,8 @@ public class StudentDetailsActivity extends AppCompatActivity {
     private void deleteStudent(String studentId) {
         if (studentId == null || studentId.isEmpty()) return;
 
-        // (Nâng cao: Xóa sub-collection trước khi xóa document cha - sẽ làm sau)
-
+        // (Nâng cao: Xóa sub-collection "certificates" trước khi xóa document cha)
+        // Tạm thời chỉ xóa document
         db.collection("students").document(studentId)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
@@ -156,7 +200,6 @@ public class StudentDetailsActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Toast.makeText(StudentDetailsActivity.this, "Lỗi khi xóa: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
-    // --- HÀM THÊM CHỨNG CHỈ (GIỮ NGUYÊN) ---
     private void showAddCertificateDialog() {
         DialogAddCertificateBinding dialogBinding = DialogAddCertificateBinding.inflate(LayoutInflater.from(this));
         new AlertDialog.Builder(this)
@@ -188,7 +231,6 @@ public class StudentDetailsActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Toast.makeText(StudentDetailsActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
-    // --- HÀM TẢI CHỨNG CHỈ (GIỮ NGUYÊN) ---
     private void loadCertificates(String studentId) {
         if (studentId == null || studentId.isEmpty()) return;
         db.collection("students").document(studentId)
@@ -209,7 +251,6 @@ public class StudentDetailsActivity extends AppCompatActivity {
                 });
     }
 
-    // --- HÀM XÓA CHỨNG CHỈ (GIỮ NGUYÊN) ---
     private void deleteCertificateFromFirestore(String certificateId) {
         if (currentStudentId == null || certificateId == null) return;
         db.collection("students").document(currentStudentId)
@@ -222,45 +263,34 @@ public class StudentDetailsActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Toast.makeText(this, "Lỗi khi xóa: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
-    // === THÊM MỚI 1: HÀM HIỂN THỊ DIALOG SỬA CHỨNG CHỈ ===
     private void showEditCertificateDialog(Certificate certificateToEdit) {
-        // 1. Tải layout dialog
         DialogAddCertificateBinding dialogBinding = DialogAddCertificateBinding.inflate(LayoutInflater.from(this));
-
-        // 2. Điền thông tin cũ vào dialog
         dialogBinding.etCertificateName.setText(certificateToEdit.getName());
         dialogBinding.etCertificateDate.setText(certificateToEdit.getDateIssued());
 
-        // 3. Hiển thị dialog
         new AlertDialog.Builder(this)
-                .setTitle("Sửa Chứng Chỉ") // Đổi tiêu đề
+                .setTitle("Sửa Chứng Chỉ")
                 .setView(dialogBinding.getRoot())
                 .setPositiveButton("Lưu", (dialog, which) -> {
-                    // Lấy thông tin mới
                     String newName = dialogBinding.etCertificateName.getText().toString().trim();
                     String newDate = dialogBinding.etCertificateDate.getText().toString().trim();
 
                     if (newName.isEmpty() || newDate.isEmpty()) {
                         Toast.makeText(this, "Vui lòng nhập đủ thông tin", Toast.LENGTH_SHORT).show();
                     } else {
-                        // Gọi hàm Cập nhật
                         updateCertificateInFirestore(certificateToEdit, newName, newDate);
                     }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
-    // =================================================
 
-    // === THÊM MỚI 2: HÀM CẬP NHẬT CHỨNG CHỈ ===
     private void updateCertificateInFirestore(Certificate certificate, String newName, String newDate) {
         if (currentStudentId == null || certificate.getCertificateId() == null) return;
 
-        // Dùng document() với ID của chứng chỉ
         DocumentReference certRef = db.collection("students").document(currentStudentId)
                 .collection("certificates").document(certificate.getCertificateId());
 
-        // Cập nhật các trường (dùng Map)
         Map<String, Object> updates = new HashMap<>();
         updates.put("name", newName);
         updates.put("dateIssued", newDate);
@@ -268,18 +298,8 @@ public class StudentDetailsActivity extends AppCompatActivity {
         certRef.update(updates)
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Cập nhật chứng chỉ thành công", Toast.LENGTH_SHORT).show();
-                    loadCertificates(currentStudentId); // Tải lại danh sách
+                    loadCertificates(currentStudentId);
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Lỗi khi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-    }
-    // =========================================
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (currentStudentId != null) {
-            loadStudentData(currentStudentId);
-            loadCertificates(currentStudentId);
-        }
     }
 }

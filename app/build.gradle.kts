@@ -39,6 +39,12 @@ android {
 }
 
 dependencies {
+    // Thêm dòng này để nhập Firebase BOM (Bill of Materials)
+    implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
+    // Thêm "ktx" cho các thư viện Firebase để dùng cú pháp Kotlin (nếu cần)
+    // và thêm firebase-auth
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)

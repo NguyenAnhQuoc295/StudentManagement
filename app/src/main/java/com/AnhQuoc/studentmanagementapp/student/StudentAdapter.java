@@ -9,28 +9,26 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.AnhQuoc.studentmanagementapp.databinding.ItemStudentBinding;
 import com.AnhQuoc.studentmanagementapp.model.Student;
-// import com.bumptech.glide.Glide; // Bỏ comment khi bạn thêm logic ảnh
+// import com.bumptech.glide.Glide;
 
 import java.util.List;
 
 public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentViewHolder> {
 
     private List<Student> studentList;
-
-    // === THAY ĐỔI 1: Thêm Interface ===
     private OnItemClickListener listener;
+    // private String userRole; // <-- KHÔNG CẦN NỮA, chúng ta sẽ ẩn nó trong Fragment
 
     public interface OnItemClickListener {
         void onItemClick(Student student);
     }
-    // ===================================
 
-    // === THAY ĐỔI 2: Cập nhật Constructor ===
+    // Cập nhật Constructor (không cần vai trò ở đây nữa)
     public StudentAdapter(List<Student> studentList, OnItemClickListener listener) {
         this.studentList = studentList;
         this.listener = listener;
+        // this.userRole = userRole; // <-- KHÔNG CẦN
     }
-    // =======================================
 
     @NonNull
     @Override
@@ -53,18 +51,29 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentV
         holder.binding.tvStudentNameItem.setText(student.getName());
         holder.binding.tvStudentInfoItem.setText(student.getAge() + " tuổi - " + student.getPhone());
 
-        // === THAY ĐỔI 3: Gán sự kiện Click ===
+        // Gán sự kiện Click cho cả item
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(student);
             }
         });
-        // ===================================
 
-        // (Bỏ comment khi bạn có URL ảnh)
-        // Glide.with(holder.itemView.getContext())
-        //         .load(student.getProfileImageUrl())
-        //         .into(holder.binding.imgStudentItem);
+        // XỬ LÝ PHÂN QUYỀN
+        // (Tạm thời chúng ta sẽ ẩn nút này cho tất cả,
+        // vì logic xóa nên nằm trong StudentDetailsActivity để nhất quán)
+        holder.binding.btnDeleteItem.setVisibility(View.GONE);
+
+        // (Nếu bạn muốn Admin xóa ngay từ danh sách, bạn sẽ phải truyền
+        // userRole vào Adapter và hiện/ẩn nút này)
+
+        // if ("Admin".equals(userRole)) {
+        //     holder.binding.btnDeleteItem.setVisibility(View.VISIBLE);
+        //     holder.binding.btnDeleteItem.setOnClickListener(v -> {
+        //         // Xử lý logic xóa nhanh
+        //     });
+        // } else {
+        //     holder.binding.btnDeleteItem.setVisibility(View.GONE);
+        // }
     }
 
     @Override

@@ -38,6 +38,11 @@
             android:theme="@style/Theme.StudentManagementApp.NoActionBar">
         </activity>
 
+        <activity
+            android:name=".user.AddEditUserActivity"
+            android:exported="false">
+        </activity>
+
     </application>
 
 </manifest>
