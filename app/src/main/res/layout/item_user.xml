@@ -38,7 +38,8 @@
             android:textStyle="bold"
             app:layout_constraintStart_toEndOf="@id/imgUserItem"
             app:layout_constraintTop_toTopOf="@id/imgUserItem"
-            app:layout_constraintEnd_toStartOf="@id/btnDeleteUser"/>
+
+            app:layout_constraintEnd_toStartOf="@id/btnHistoryUser"/>
 
         <TextView
             android:id="@+id/tvUserRoleItem"
@@ -54,20 +55,28 @@
             android:id="@+id/tvUserStatusItem"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Trạng thái: Normal"
+            android:text="Trạng thái: Normal"K
             android:textColor="@color/colorAccentGolden"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="@id/tvUserNameItem"
             app:layout_constraintTop_toBottomOf="@id/tvUserRoleItem" />
 
         <ImageButton
+            android:id="@+id/btnHistoryUser"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_history" android:background="?attr/selectableItemBackgroundBorderless"
+            app:tint="@color/colorHintSepia"
+            app:layout_constraintEnd_toStartOf="@id/btnDeleteUser" app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:contentDescription="Xem lịch sử" />
+        <ImageButton
             android:id="@+id/btnDeleteUser"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:src="@drawable/ic_delete" android:background="?attr/selectableItemBackgroundBorderless"
             app:tint="@color/colorHintSepia"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             android:contentDescription="Xóa" />
 

@@ -11,6 +11,7 @@ public class User {
     private String phone;
     private String status; // Ví dụ: "Normal" hoặc "Locked"
     private String role;   // Ví dụ: "Admin", "Manager", "Employee"
+    private String profileImageUrl; // <-- THÊM TRƯỜNG MỚI
 
     // Constructor rỗng (bắt buộc cho Firestore)
     public User() {
@@ -50,6 +51,11 @@ public class User {
         return role;
     }
 
+    // Getter mới
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
     // --- Setters ---
     public void setUserId(String userId) {
         this.userId = userId;
@@ -73,5 +79,10 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    // Setter mới
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 }

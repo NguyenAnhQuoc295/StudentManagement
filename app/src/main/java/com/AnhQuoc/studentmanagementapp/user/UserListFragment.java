@@ -71,6 +71,17 @@ public class UserListFragment extends Fragment {
                         .setIcon(R.drawable.ic_delete)
                         .show();
             }
+
+            // === THÊM 1: IMPLEMENT HÀM MỚI ===
+            @Override
+            public void onHistoryClick(User user) {
+                // Mở màn hình LoginHistoryActivity
+                Intent intent = new Intent(getActivity(), LoginHistoryActivity.class);
+                // Gửi ID của user được chọn sang
+                intent.putExtra("USER_ID_TO_VIEW", user.getUserId());
+                startActivity(intent);
+            }
+            // =================================
         });
 
         // 3. Cài đặt RecyclerView

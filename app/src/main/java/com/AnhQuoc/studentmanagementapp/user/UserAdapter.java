@@ -16,6 +16,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     public interface OnUserClickListener {
         void onUserClick(User user);
         void onDeleteClick(User user);
+        void onHistoryClick(User user); // <-- THÊM 1: HÀM MỚI TRONG INTERFACE
     }
 
     public UserAdapter(List<User> userList, OnUserClickListener listener) {
@@ -41,28 +42,23 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             return;
         }
 
-        // === THAY ĐỔI QUAN TRỌNG: KIỂM TRA NULL ===
-        // Nếu trường 'name' không có (null), hiển thị "Lỗi Tên"
+        // === (Phần code set text cho các TextView giữ nguyên) ===
         if (user.getName() != null) {
             holder.binding.tvUserNameItem.setText(user.getName());
         } else {
             holder.binding.tvUserNameItem.setText("[Lỗi Tên]");
         }
-
-        // Nếu trường 'role' không có (null), hiển thị "Không rõ"
         if (user.getRole() != null) {
             holder.binding.tvUserRoleItem.setText("Vai trò: " + user.getRole());
         } else {
             holder.binding.tvUserRoleItem.setText("Vai trò: [Không rõ]");
         }
-
-        // Nếu trường 'status' không có (null), hiển thị "Không rõ"
         if (user.getStatus() != null) {
             holder.binding.tvUserStatusItem.setText("Trạng thái: " + user.getStatus());
         } else {
             holder.binding.tvUserStatusItem.setText("Trạng thái: [Không rõ]");
         }
-        // ===========================================
+        // =======================================================
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
@@ -75,6 +71,14 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 listener.onDeleteClick(user);
             }
         });
+
+        // === THÊM 2: GÁN SỰ KIỆN CHO NÚT MỚI ===
+        holder.binding.btnHistoryUser.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onHistoryClick(user);
+            }
+        });
+        // =====================================
     }
 
     @Override
