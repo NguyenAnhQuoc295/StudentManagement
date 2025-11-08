@@ -67,6 +67,12 @@ public class LoginHistoryActivity extends AppCompatActivity {
                 .limit(50) // Giới hạn 50 bản ghi
                 .get()
                 .addOnCompleteListener(task -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
+
                     if (task.isSuccessful()) {
                         historyList.clear();
                         for (QueryDocumentSnapshot document : task.getResult()) {

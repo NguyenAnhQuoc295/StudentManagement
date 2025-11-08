@@ -119,11 +119,6 @@ public class StudentDetailsActivity extends AppCompatActivity {
         binding.rvCertificates.setAdapter(certificateAdapter);
     }
 
-    // ... (Hàm loadStudentData, deleteStudent, showAddCertificateDialog,
-    //      saveCertificateToFirestore, loadCertificates, deleteCertificateFromFirestore,
-    //      showEditCertificateDialog, updateCertificateInFirestore GIỮ NGUYÊN) ...
-
-    // (Chỉ cập nhật hàm onResume)
     @Override
     protected void onResume() {
         super.onResume();
@@ -134,11 +129,6 @@ public class StudentDetailsActivity extends AppCompatActivity {
         }
     }
 
-    // ... (Toàn bộ code cũ của bạn từ
-    //      private void setupButtonListeners()
-    //      đến
-    //      private void updateCertificateInFirestore(...)
-    //      vẫn nằm ở đây) ...
     private void setupButtonListeners() {
         binding.btnDeleteStudent.setOnClickListener(v -> {
             new AlertDialog.Builder(StudentDetailsActivity.this)
@@ -164,6 +154,12 @@ public class StudentDetailsActivity extends AppCompatActivity {
         db.collection("students").document(studentId)
                 .get()
                 .addOnCompleteListener(task -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return; // Activity đã bị hủy, không làm gì cả
+                    }
+                    // =======================================================
+
                     if (task.isSuccessful()) {
                         DocumentSnapshot document = task.getResult();
                         if (document.exists()) {
@@ -194,10 +190,22 @@ public class StudentDetailsActivity extends AppCompatActivity {
         db.collection("students").document(studentId)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     Toast.makeText(StudentDetailsActivity.this, "Xóa sinh viên thành công", Toast.LENGTH_SHORT).show();
                     finish();
                 })
-                .addOnFailureListener(e -> Toast.makeText(StudentDetailsActivity.this, "Lỗi khi xóa: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
+                    Toast.makeText(StudentDetailsActivity.this, "Lỗi khi xóa: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void showAddCertificateDialog() {
@@ -225,10 +233,22 @@ public class StudentDetailsActivity extends AppCompatActivity {
                 .collection("certificates")
                 .add(certificate)
                 .addOnSuccessListener(documentReference -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     Toast.makeText(StudentDetailsActivity.this, "Thêm chứng chỉ thành công", Toast.LENGTH_SHORT).show();
                     loadCertificates(currentStudentId);
                 })
-                .addOnFailureListener(e -> Toast.makeText(StudentDetailsActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
+                    Toast.makeText(StudentDetailsActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void loadCertificates(String studentId) {
@@ -237,6 +257,12 @@ public class StudentDetailsActivity extends AppCompatActivity {
                 .collection("certificates")
                 .get()
                 .addOnCompleteListener(task -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
+
                     if (task.isSuccessful()) {
                         certificateList.clear();
                         for (QueryDocumentSnapshot document : task.getResult()) {
@@ -257,10 +283,22 @@ public class StudentDetailsActivity extends AppCompatActivity {
                 .collection("certificates").document(certificateId)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     Toast.makeText(this, "Xóa chứng chỉ thành công", Toast.LENGTH_SHORT).show();
                     loadCertificates(currentStudentId);
                 })
-                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi khi xóa: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
+                    Toast.makeText(this, "Lỗi khi xóa: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void showEditCertificateDialog(Certificate certificateToEdit) {
@@ -297,9 +335,21 @@ public class StudentDetailsActivity extends AppCompatActivity {
 
         certRef.update(updates)
                 .addOnSuccessListener(aVoid -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     Toast.makeText(this, "Cập nhật chứng chỉ thành công", Toast.LENGTH_SHORT).show();
                     loadCertificates(currentStudentId);
                 })
-                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi khi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
+                    Toast.makeText(this, "Lỗi khi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 }

@@ -63,6 +63,12 @@ public class AddEditUserActivity extends AppCompatActivity {
         db.collection("users").document(userId)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
+
                     if (documentSnapshot.exists()) {
                         currentUserData = documentSnapshot.toObject(User.class);
                         if (currentUserData != null) {
@@ -92,6 +98,11 @@ public class AddEditUserActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     Toast.makeText(this, "Lỗi khi tải dữ liệu", Toast.LENGTH_SHORT).show();
                     finish();
                 });
@@ -115,6 +126,12 @@ public class AddEditUserActivity extends AppCompatActivity {
         // 2. Tạo tài khoản trong Firebase Authentication
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
+
                     if (task.isSuccessful()) {
                         // Tạo Auth thành công, giờ lưu vào Firestore
                         FirebaseUser firebaseUser = mAuth.getCurrentUser();
@@ -133,11 +150,21 @@ public class AddEditUserActivity extends AppCompatActivity {
                         db.collection("users").document(uid)
                                 .set(newUser)
                                 .addOnSuccessListener(aVoid -> {
+                                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                                    if (isFinishing() || isDestroyed()) {
+                                        return;
+                                    }
+                                    // =======================================================
                                     showLoading(false);
                                     Toast.makeText(this, "Thêm người dùng thành công!", Toast.LENGTH_SHORT).show();
                                     finish(); // Đóng Activity
                                 })
                                 .addOnFailureListener(e -> {
+                                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                                    if (isFinishing() || isDestroyed()) {
+                                        return;
+                                    }
+                                    // =======================================================
                                     showLoading(false);
                                     Toast.makeText(this, "Lỗi khi lưu vào Firestore: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                     // (Nâng cao: nên xóa tài khoản Auth nếu lưu Firestore thất bại)
@@ -175,11 +202,21 @@ public class AddEditUserActivity extends AppCompatActivity {
         db.collection("users").document(userIdToEdit)
                 .set(currentUserData)
                 .addOnSuccessListener(aVoid -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     showLoading(false);
                     Toast.makeText(this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
                     finish();
                 })
                 .addOnFailureListener(e -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     showLoading(false);
                     Toast.makeText(this, "Lỗi khi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });

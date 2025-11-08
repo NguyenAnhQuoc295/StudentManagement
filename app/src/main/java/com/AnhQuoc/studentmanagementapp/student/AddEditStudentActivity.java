@@ -68,7 +68,7 @@ public class AddEditStudentActivity extends AppCompatActivity {
         });
     }
 
-    // Hàm Thêm mới (giống hệt code cũ của bạn)
+    // Hàm Thêm mới
     private void saveStudentToFirestore() {
         String name = binding.etStudentName.getText().toString().trim();
         String ageStr = binding.etStudentAge.getText().toString().trim();
@@ -84,10 +84,20 @@ public class AddEditStudentActivity extends AppCompatActivity {
         db.collection("students")
                 .add(student)
                 .addOnSuccessListener(documentReference -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     Toast.makeText(AddEditStudentActivity.this, "Thêm sinh viên thành công!", Toast.LENGTH_SHORT).show();
                     finish();
                 })
                 .addOnFailureListener(e -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     Toast.makeText(AddEditStudentActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
@@ -97,6 +107,12 @@ public class AddEditStudentActivity extends AppCompatActivity {
         db.collection("students").document(studentId)
                 .get()
                 .addOnCompleteListener(task -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
+
                     if (task.isSuccessful()) {
                         DocumentSnapshot document = task.getResult();
                         if (document.exists()) {
@@ -135,10 +151,20 @@ public class AddEditStudentActivity extends AppCompatActivity {
         db.collection("students").document(studentIdToEdit)
                 .set(updatedStudent) // .set() sẽ ghi đè dữ liệu cũ
                 .addOnSuccessListener(aVoid -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     Toast.makeText(this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
                     finish(); // Đóng màn hình
                 })
                 .addOnFailureListener(e -> {
+                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    // =======================================================
                     Toast.makeText(this, "Lỗi khi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }

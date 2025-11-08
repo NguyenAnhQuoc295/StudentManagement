@@ -120,6 +120,12 @@ public class StudentListFragment extends Fragment {
             checkedItem = 3;
         }
 
+        // === SỬA LỖI: Kiểm tra getContext() trước khi hiển thị Dialog ===
+        if (getContext() == null) {
+            return;
+        }
+        // ============================================================
+
         new AlertDialog.Builder(getContext())
                 .setTitle("Sắp xếp danh sách")
                 .setSingleChoiceItems(sortOptions, checkedItem, (dialog, which) -> {
@@ -141,7 +147,11 @@ public class StudentListFragment extends Fragment {
                             currentSortDirection = Query.Direction.DESCENDING;
                             break;
                     }
-                    loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
+                    // === SỬA LỖI: Kiểm tra binding trước khi truy cập ===
+                    if (binding != null) {
+                        loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
+                    }
+                    // ================================================
                     dialog.dismiss();
                 })
                 .setNegativeButton("Hủy", null)
@@ -163,6 +173,12 @@ public class StudentListFragment extends Fragment {
 
         query.get()
                 .addOnCompleteListener(task -> {
+                    // === SỬA LỖI: Kiểm tra getContext() trước khi thực hiện bất kỳ hành động nào ===
+                    if (getContext() == null) {
+                        return; // Fragment đã bị hủy, không làm gì cả
+                    }
+                    // =========================================================================
+
                     if (task.isSuccessful()) {
                         studentList.clear();
                         for (QueryDocumentSnapshot document : task.getResult()) {
@@ -173,7 +189,7 @@ public class StudentListFragment extends Fragment {
                         studentAdapter.notifyDataSetChanged();
                     } else {
                         Log.w("Firestore", "Error getting documents.", task.getException());
-                        // Đây là dòng đã gây lỗi (giờ đã fix)
+                        // Đây là dòng đã gây lỗi (giờ đã an toàn)
                         Toast.makeText(getContext(), "Lỗi khi tải: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
@@ -182,7 +198,11 @@ public class StudentListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
+        // === SỬA LỖI: Kiểm tra binding trước khi truy cập ===
+        if (binding != null) {
+            loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
+        }
+        // ================================================
     }
 
     @Override

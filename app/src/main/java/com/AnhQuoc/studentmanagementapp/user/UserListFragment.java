@@ -61,6 +61,11 @@ public class UserListFragment extends Fragment {
             @Override
             public void onDeleteClick(User user) {
                 // TODO: Chỉ cho phép Admin xóa. Tạm thời cho phép xóa.
+                // === SỬA LỖI: Kiểm tra getContext() trước khi hiển thị Dialog ===
+                if (getContext() == null) {
+                    return;
+                }
+                // ============================================================
                 new AlertDialog.Builder(getContext())
                         .setTitle("Xác nhận Xóa")
                         .setMessage("Bạn có chắc muốn xóa " + user.getName() + "?\n(Hành động này không thể hoàn tác)")
@@ -127,6 +132,12 @@ public class UserListFragment extends Fragment {
 
         query.get()
                 .addOnCompleteListener(task -> {
+                    // === SỬA LỖI: Kiểm tra getContext() trước khi thực hiện bất kỳ hành động nào ===
+                    if (getContext() == null) {
+                        return; // Fragment đã bị hủy, không làm gì cả
+                    }
+                    // =========================================================================
+
                     if (task.isSuccessful()) {
                         userList.clear();
                         for (QueryDocumentSnapshot document : task.getResult()) {
@@ -151,10 +162,22 @@ public class UserListFragment extends Fragment {
         db.collection("users").document(userId)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
+                    // === SỬA LỖI: Kiểm tra getContext() trước khi hiển thị Toast ===
+                    if (getContext() == null) {
+                        return;
+                    }
+                    // ==========================================================
                     Toast.makeText(getContext(), "Xóa người dùng thành công", Toast.LENGTH_SHORT).show();
                     loadUsersFromFirestore(binding.searchViewUsers.getQuery().toString()); // Tải lại danh sách
                 })
-                .addOnFailureListener(e -> Toast.makeText(getContext(), "Lỗi khi xóa: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> {
+                    // === SỬA LỖI: Kiểm tra getContext() trước khi hiển thị Toast ===
+                    if (getContext() == null) {
+                        return;
+                    }
+                    // ==========================================================
+                    Toast.makeText(getContext(), "Lỗi khi xóa: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
 
@@ -162,8 +185,12 @@ public class UserListFragment extends Fragment {
     public void onResume() {
         super.onResume();
         // Tải lại dữ liệu khi quay lại màn hình này
-        String currentQuery = binding.searchViewUsers.getQuery().toString();
-        loadUsersFromFirestore(currentQuery);
+        // === SỬA LỖI: Kiểm tra binding trước khi truy cập ===
+        if (binding != null) {
+            String currentQuery = binding.searchViewUsers.getQuery().toString();
+            loadUsersFromFirestore(currentQuery);
+        }
+        // ================================================
     }
 
     @Override

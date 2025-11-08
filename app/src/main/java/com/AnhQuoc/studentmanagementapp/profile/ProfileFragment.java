@@ -68,10 +68,11 @@ public class ProfileFragment extends Fragment {
         // === KHỞI TẠO LAUNCHER CHỌN ẢNH ===
         mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(),
                 uri -> {
-                    if (uri != null) {
+                    // === SỬA LỖI: Kiểm tra trước khi dùng binding ===
+                    if (uri != null && binding != null && getContext() != null) {
                         selectedImageUri = uri;
                         // Hiển thị ảnh vừa chọn lên ImageView
-                        Glide.with(this)
+                        Glide.with(getContext()) // Dùng getContext() an toàn hơn
                                 .load(selectedImageUri)
                                 .into(binding.imgUserProfile);
 
@@ -117,6 +118,12 @@ public class ProfileFragment extends Fragment {
         // Lấy thông tin từ Firestore bằng UID
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(documentSnapshot -> {
+                    // === SỬA LỖI: Kiểm tra binding và context trước khi cập nhật UI ===
+                    if (binding == null || getContext() == null) {
+                        return; // View đã bị hủy, không làm gì cả
+                    }
+                    // ==============================================================
+
                     if (documentSnapshot.exists()) {
                         User user = documentSnapshot.toObject(User.class);
                         if (user != null) {
@@ -125,13 +132,13 @@ public class ProfileFragment extends Fragment {
 
                             // === CẬP NHẬT LOGIC TẢI ẢNH ===
                             if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
-                                Glide.with(this)
+                                Glide.with(getContext()) // Dùng getContext() an toàn hơn
                                         .load(user.getProfileImageUrl())
                                         .placeholder(R.drawable.ic_profile) // Ảnh chờ
                                         .into(binding.imgUserProfile);
                             } else {
                                 // Nếu không có ảnh, dùng ảnh mặc định
-                                Glide.with(this)
+                                Glide.with(getContext()) // Dùng getContext() an toàn hơn
                                         .load(R.drawable.ic_profile)
                                         .into(binding.imgUserProfile);
                             }
@@ -144,6 +151,11 @@ public class ProfileFragment extends Fragment {
                     }
                 })
                 .addOnFailureListener(e -> {
+                    // === SỬA LỖI: Kiểm tra binding và context trước khi log lỗi ===
+                    if (binding == null) {
+                        return; // View đã bị hủy
+                    }
+                    // ==========================================================
                     Log.w(TAG, "Lỗi khi lấy thông tin user", e);
                 });
     }
@@ -159,7 +171,11 @@ public class ProfileFragment extends Fragment {
         // Tạo đường dẫn trên Storage: profile_images/USER_ID.jpg
         StorageReference fileRef = storageRef.child("profile_images/" + uid + ".jpg");
 
-        Toast.makeText(getContext(), "Đang tải ảnh lên...", Toast.LENGTH_SHORT).show();
+        // === SỬA LỖI: Kiểm tra context trước khi hiển thị Toast ===
+        if (getContext() != null) {
+            Toast.makeText(getContext(), "Đang tải ảnh lên...", Toast.LENGTH_SHORT).show();
+        }
+        // ======================================================
 
         fileRef.putFile(selectedImageUri)
                 .addOnSuccessListener(taskSnapshot -> {
@@ -171,7 +187,11 @@ public class ProfileFragment extends Fragment {
                     });
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Tải ảnh thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    // === SỬA LỖI: Kiểm tra context trước khi hiển thị Toast ===
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), "Tải ảnh thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                    // ======================================================
                 });
     }
 
@@ -181,15 +201,29 @@ public class ProfileFragment extends Fragment {
         db.collection("users").document(uid)
                 .update("profileImageUrl", downloadUrl) // Cập nhật trường mới
                 .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(getContext(), "Cập nhật ảnh đại diện thành công!", Toast.LENGTH_SHORT).show();
+                    // === SỬA LỖI: Kiểm tra context trước khi hiển thị Toast ===
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), "Cập nhật ảnh đại diện thành công!", Toast.LENGTH_SHORT).show();
+                    }
+                    // ======================================================
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Lỗi khi lưu URL: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    // === SỬA LỖI: Kiểm tra context trước khi hiển thị Toast ===
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), "Lỗi khi lưu URL: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                    // ======================================================
                 });
     }
 
     private void logoutUser() {
         mAuth.signOut(); // Đăng xuất khỏi Firebase Auth
+
+        // === SỬA LỖI: Kiểm tra getActivity() trước khi dùng ===
+        if (getActivity() == null) {
+            return;
+        }
+        // ===================================================
 
         // Chuyển về màn hình Login
         Intent intent = new Intent(getActivity(), LoginActivity.class);
@@ -198,9 +232,7 @@ public class ProfileFragment extends Fragment {
         startActivity(intent);
 
         // Kết thúc Activity hiện tại (MainActivity)
-        if (getActivity() != null) {
-            getActivity().finish();
-        }
+        getActivity().finish();
     }
 
     @Override
