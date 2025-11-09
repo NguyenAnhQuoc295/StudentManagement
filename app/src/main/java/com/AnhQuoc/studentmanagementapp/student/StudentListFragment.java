@@ -111,7 +111,7 @@ public class StudentListFragment extends Fragment {
         viewModel.getExportCsvData().observe(getViewLifecycleOwner(), csvData -> {
             if (csvData != null && !csvData.isEmpty()) {
                 createFileForExport(csvData);
-                viewModel.getExportCsvData().setValue(null); // Reset
+                // SỬA LỖI: ĐÃ XÓA DÒNG GỌI setValue() BỊ LỖI
             }
         });
 
@@ -181,9 +181,18 @@ public class StudentListFragment extends Fragment {
                                 outputStream.write(csvData.getBytes(StandardCharsets.UTF_8));
                                 Toast.makeText(getContext(), "Xuất tệp thành công!", Toast.LENGTH_SHORT).show();
                             } catch (Exception e) {
-                                Toast.makeText(getContext(), "Lỗi khi lưu tệp: " + e.getMessage(), Toast.SHORT).show();
+                                Toast.makeText(getContext(), "Lỗi khi lưu tệp: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            } finally {
+                                // SỬA LỖI: Reset dữ liệu ở đây
+                                viewModel.clearExportData();
                             }
+                        } else {
+                            // SỬA LỖI: Reset dữ liệu nếu có lỗi
+                            viewModel.clearExportData();
                         }
+                    } else {
+                        // SỬA LỖI: Reset dữ liệu nếu người dùng hủy
+                        viewModel.clearExportData();
                     }
                 }
         );

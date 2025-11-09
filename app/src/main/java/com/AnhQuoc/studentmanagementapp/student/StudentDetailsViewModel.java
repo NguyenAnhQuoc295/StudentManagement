@@ -27,16 +27,10 @@ public class StudentDetailsViewModel extends ViewModel {
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private String currentStudentId;
 
-    // LiveData cho thông tin sinh viên
     private MutableLiveData<Student> studentLiveData = new MutableLiveData<>();
-    // LiveData cho danh sách chứng chỉ
     private MutableLiveData<List<Certificate>> certificatesLiveData = new MutableLiveData<>();
-    // LiveData cho thông báo
     private MutableLiveData<String> toastMessage = new MutableLiveData<>();
-    // LiveData cho sự kiện đóng Activity (ví dụ: sau khi xóa)
     private MutableLiveData<Boolean> closeActivityEvent = new MutableLiveData<>(false);
-
-    // LiveData mới cho Export
     private MutableLiveData<String> exportCertCsvData = new MutableLiveData<>();
 
     // Getters
@@ -52,12 +46,9 @@ public class StudentDetailsViewModel extends ViewModel {
     public LiveData<Boolean> getCloseActivityEvent() {
         return closeActivityEvent;
     }
-    // Getter mới
     public LiveData<String> getExportCertCsvData() {
         return exportCertCsvData;
     }
-
-    // ... (Giữ nguyên hàm setStudentId, refreshData, loadStudentData) ...
 
     // Hàm này được Activity gọi đầu tiên
     public void setStudentId(String studentId) {
@@ -75,8 +66,6 @@ public class StudentDetailsViewModel extends ViewModel {
             loadCertificates();
         }
     }
-
-    // --- LOGIC TỪ ACTIVITY ĐƯỢC DI CHUYỂN VÀO ĐÂY ---
 
     public void loadStudentData() {
         db.collection("students").document(currentStudentId)
@@ -112,7 +101,6 @@ public class StudentDetailsViewModel extends ViewModel {
     }
 
     public void deleteStudent() {
-        // ... (Giữ nguyên) ...
         db.collection("students").document(currentStudentId)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
@@ -123,7 +111,6 @@ public class StudentDetailsViewModel extends ViewModel {
     }
 
     public void saveCertificateToFirestore(String name, String date) {
-        // ... (Giữ nguyên) ...
         Certificate certificate = new Certificate(name, date);
         db.collection("students").document(currentStudentId)
                 .collection("certificates")
@@ -136,7 +123,6 @@ public class StudentDetailsViewModel extends ViewModel {
     }
 
     public void deleteCertificateFromFirestore(String certificateId) {
-        // ... (Giữ nguyên) ...
         db.collection("students").document(currentStudentId)
                 .collection("certificates").document(certificateId)
                 .delete()
@@ -148,7 +134,6 @@ public class StudentDetailsViewModel extends ViewModel {
     }
 
     public void updateCertificateInFirestore(String certificateId, String newName, String newDate) {
-        // ... (Giữ nguyên) ...
         DocumentReference certRef = db.collection("students").document(currentStudentId)
                 .collection("certificates").document(certificateId);
 
@@ -164,7 +149,7 @@ public class StudentDetailsViewModel extends ViewModel {
                 .addOnFailureListener(e -> toastMessage.setValue("Lỗi khi cập nhật: " + e.getMessage()));
     }
 
-    // === CHỨC NĂNG MỚI: EXPORT CERTIFICATES ===
+    // === EXPORT CERTIFICATES ===
     public void exportCertificatesToCsv() {
         List<Certificate> currentList = certificatesLiveData.getValue();
         if (currentList == null || currentList.isEmpty()) {
@@ -181,7 +166,12 @@ public class StudentDetailsViewModel extends ViewModel {
         exportCertCsvData.setValue(csvContent.toString());
     }
 
-    // === CHỨC NĂNG MỚI: IMPORT CERTIFICATES ===
+    // === HÀM MỚI ĐỂ ACTIVITY GỌI ===
+    public void clearExportData() {
+        exportCertCsvData.setValue(null);
+    }
+
+    // === IMPORT CERTIFICATES ===
     public void importCertificatesFromCsv(Uri uri, ContentResolver contentResolver) {
         if (uri == null) return;
 

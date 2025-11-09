@@ -16,7 +16,8 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner =
+            "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -27,6 +28,7 @@ android {
                 "proguard-rules.pro"
             )
         }
+
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -40,6 +42,7 @@ android {
 
 dependencies {
     // Thêm dòng này để nhập Firebase BOM (Bill of Materials)
+    // SỬA LẠI: Bỏ 1 dòng trùng lặp
     implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
 
     implementation("androidx.lifecycle:lifecycle-viewmodel:2.6.2")
@@ -48,12 +51,11 @@ dependencies {
 
     annotationProcessor("androidx.lifecycle:lifecycle-compiler:2.6.2")
 
-    implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
-
-    implementation("com.google.firebase:firebase-auth")
+    // SỬA LẠI: Bỏ 1 dòng trùng lặp
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation(libs.appcompat)
+
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)

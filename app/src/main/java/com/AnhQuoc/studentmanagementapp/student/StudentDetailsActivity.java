@@ -7,7 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Toast;
-import android.widget.ImageView; // <-- Import quan trọng
+// import android.widget.ImageView; // Không cần
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -16,7 +16,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.appcompat.widget.Toolbar; // <-- Import quan trọng
+// import androidx.appcompat.widget.Toolbar; // Không cần
 
 import com.AnhQuoc.studentmanagementapp.R;
 import com.AnhQuoc.studentmanagementapp.databinding.ActivityStudentDetailsBinding;
@@ -38,12 +38,10 @@ public class StudentDetailsActivity extends AppCompatActivity {
     private CertificateAdapter certificateAdapter;
     private List<Certificate> certificateList;
 
-    // Các biến tìm thủ công để tránh lỗi cache
-    private Toolbar toolbar;
-    private ImageView studentImageView; // <-- Biến cho ImageView
-
     // === LAUNCHER MỚI ===
     private ActivityResultLauncher<String> importCertCsvLauncher;
+
+    // SỬA LỖI CHÍNH TẢ: Đảm bảo tên này khớp với tên ở dưới
     private ActivityResultLauncher<Intent> exportCertCsvLauncher;
 
 
@@ -53,24 +51,7 @@ public class StudentDetailsActivity extends AppCompatActivity {
         binding = ActivityStudentDetailsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // === GIẢI PHÁP SỬA LỖI BUILD CACHE ===
-        // Chúng ta tìm thủ công các View đang bị lỗi cache
-        try {
-            // Đây là code đúng
-            toolbar = findViewById(R.id.toolbarDetail);
-            toolbar.setNavigationOnClickListener(v -> finish());
-
-            // Đây là code đúng
-            studentImageView = findViewById(R.id.imgStudentDetail);
-
-        } catch (Exception e) {
-            // (Nếu 'Invalidate Caches' được chạy, code sẽ không bao giờ nhảy vào đây)
-            Toast.makeText(this, "Lỗi nghiêm trọng: Không tìm thấy ID. Vui lòng 'Invalidate Caches / Restart'.", Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
-        // === KẾT THÚC SỬA LỖI ===
-
+        binding.toolbarDetail.setNavigationOnClickListener(v -> finish());
 
         // 1. Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(StudentDetailsViewModel.class);
@@ -106,18 +87,12 @@ public class StudentDetailsActivity extends AppCompatActivity {
         // Quan sát thông tin sinh viên
         viewModel.getStudentLiveData().observe(this, student -> {
             if (student != null) {
-                if (toolbar != null) {
-                    toolbar.setTitle(student.getName());
-                }
-
-                // (Các view này không bị lỗi cache)
+                binding.toolbarDetail.setTitle(student.getName());
                 binding.tvDetailAge.setText("Tuổi: " + student.getAge());
                 binding.tvDetailPhone.setText("SĐT: " + student.getPhone());
-
-                // Sử dụng biến đã tìm thủ công
                 Glide.with(StudentDetailsActivity.this)
                         .load(R.drawable.ic_profile)
-                        .into(studentImageView);
+                        .into(binding.imgStudentDetail);
             }
         });
 
@@ -146,7 +121,7 @@ public class StudentDetailsActivity extends AppCompatActivity {
         viewModel.getExportCertCsvData().observe(this, csvData -> {
             if (csvData != null && !csvData.isEmpty()) {
                 createFileForExport(csvData);
-                viewModel.getExportCertCsvData().setValue(null); // Reset
+                // SỬA LỖI 1: Xóa dòng viewModel.getExportCertCsvData().setValue(null) ở đây
             }
         });
     }
@@ -238,21 +213,29 @@ public class StudentDetailsActivity extends AppCompatActivity {
                 }
         );
 
-        // Launcher cho Export
+        // SỬA LỖI 2: Đảm bảo tên biến (exportCertCsvLauncher) khớp với tên đã khai báo
         exportCertCsvLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
+                    // SỬA LỖI 1 (tiếp): Đặt logic reset vào đây
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         Uri uri = result.getData().getData();
-                        String csvData = viewModel.getExportCertCsvData.getValue();
+                        String csvData = viewModel.getExportCertCsvData().getValue();
+
                         if (uri != null && csvData != null) {
                             try (OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
                                 outputStream.write(csvData.getBytes(StandardCharsets.UTF_8));
                                 Toast.makeText(this, "Xuất tệp thành công!", Toast.LENGTH_SHORT).show();
                             } catch (Exception e) {
-                                Toast.makeText(this, "Lỗi khi lưu tệp: " + e.getMessage(), Toast.SHORT).show();
+                                Toast.makeText(this, "Lỗi khi lưu tệp: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            } finally {
+                                viewModel.clearExportData(); // Luôn reset sau khi thử
                             }
+                        } else {
+                            viewModel.clearExportData(); // Reset nếu có lỗi
                         }
+                    } else {
+                        viewModel.clearExportData(); // Reset nếu người dùng hủy
                     }
                 }
         );
@@ -263,6 +246,8 @@ public class StudentDetailsActivity extends AppCompatActivity {
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("text/csv");
         intent.putExtra(Intent.EXTRA_TITLE, currentStudentId + "_certificates.csv");
+
+        // SỬA LỖI 2 (tiếp): Đảm bảo tên biến khớp
         exportCertCsvLauncher.launch(intent);
     }
 

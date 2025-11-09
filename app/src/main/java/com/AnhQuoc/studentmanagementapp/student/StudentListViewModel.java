@@ -46,6 +46,11 @@ public class StudentListViewModel extends ViewModel {
         return exportCsvData;
     }
 
+    // === HÀM MỚI ĐỂ FRAGMENT GỌI ===
+    public void clearExportData() {
+        exportCsvData.setValue(null);
+    }
+
 
     // Hàm để Fragment gọi khi nhấn nút sắp xếp
     public void setSortOrder(String field, Query.Direction direction) {

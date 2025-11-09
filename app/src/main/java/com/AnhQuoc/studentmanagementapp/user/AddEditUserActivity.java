@@ -104,12 +104,16 @@ public class AddEditUserActivity extends AppCompatActivity {
         String role = ((RadioButton) findViewById(binding.rgRole.getCheckedRadioButtonId())).getText().toString();
         String status = ((RadioButton) findViewById(binding.rgStatus.getCheckedRadioButtonId())).getText().toString();
 
+        // Lấy mật khẩu mới
+        String newPassword = binding.etUserPassword.getText().toString().trim();
+
         if (currentUserData == null) {
             Toast.makeText(this, "Chưa tải xong dữ liệu, vui lòng đợi", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        viewModel.updateUserInFirestore(userIdToEdit, ageStr, phone, role, status, currentUserData);
+        // Truyền mật khẩu mới vào ViewModel
+        viewModel.updateUserInFirestore(userIdToEdit, newPassword, ageStr, phone, role, status, currentUserData);
     }
 
     private void showLoading(boolean isLoading) {

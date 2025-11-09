@@ -1,5 +1,7 @@
 package com.AnhQuoc.studentmanagementapp.user;
 
+import android.util.Log; // <-- Thêm import
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -77,15 +79,16 @@ public class AddEditUserViewModel extends ViewModel {
                 });
     }
 
-    public void updateUserInFirestore(String userIdToEdit, String ageStr, String phone, String role, String status, User currentUserData) {
+    // SỬA LẠI HÀM NÀY ĐỂ XỬ LÝ MẬT KHẨU
+    public void updateUserInFirestore(String userIdToEdit, String newPassword, String ageStr, String phone, String role, String status, User currentUserData) {
         if (ageStr.isEmpty() || phone.isEmpty()) {
             toastMessage.setValue("Vui lòng nhập đầy đủ thông tin (trừ mật khẩu)");
             return;
         }
 
-        // TODO: Xử lý logic cập nhật mật khẩu
-
         isLoading.setValue(true);
+
+        // Cập nhật thông tin trong Firestore
         currentUserData.setAge(Integer.parseInt(ageStr));
         currentUserData.setPhone(phone);
         currentUserData.setRole(role);
@@ -94,13 +97,46 @@ public class AddEditUserViewModel extends ViewModel {
         db.collection("users").document(userIdToEdit)
                 .set(currentUserData)
                 .addOnSuccessListener(aVoid -> {
-                    isLoading.setValue(false);
-                    toastMessage.setValue("Cập nhật thành công!");
-                    saveSuccessEvent.setValue(true);
+                    // Cập nhật thông tin thành công,
+                    // BÂY GIỜ kiểm tra xem có cần cập nhật mật khẩu không
+                    if (newPassword != null && !newPassword.isEmpty()) {
+                        updatePasswordInAuth(newPassword);
+                    } else {
+                        // Không có mật khẩu mới, kết thúc
+                        isLoading.setValue(false);
+                        toastMessage.setValue("Cập nhật thông tin thành công!");
+                        saveSuccessEvent.setValue(true);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     isLoading.setValue(false);
-                    toastMessage.setValue("Lỗi khi cập nhật: " + e.getMessage());
+                    toastMessage.setValue("Lỗi khi cập nhật Firestore: " + e.getMessage());
+                });
+    }
+
+    // HÀM MỚI ĐỂ CẬP NHẬT MẬT KHẨU TRONG FIREBASE AUTH
+    private void updatePasswordInAuth(String newPassword) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            // Trường hợp này hiếm khi xảy ra nếu logic đúng
+            isLoading.setValue(false);
+            toastMessage.setValue("Lỗi: Không tìm thấy người dùng hiện tại để đổi mật khẩu.");
+            return;
+        }
+
+        user.updatePassword(newPassword)
+                .addOnCompleteListener(task -> {
+                    isLoading.setValue(false);
+                    if (task.isSuccessful()) {
+                        Log.d("AddEditUserViewModel", "Cập nhật mật khẩu Auth thành công.");
+                        toastMessage.setValue("Cập nhật thông tin VÀ mật khẩu thành công!");
+                        saveSuccessEvent.setValue(true);
+                    } else {
+                        // Thất bại (ví dụ: mật khẩu quá yếu, hoặc cần đăng nhập lại)
+                        Log.w("AddEditUserViewModel", "Lỗi cập nhật mật khẩu Auth: ", task.getException());
+                        toastMessage.setValue("Cập nhật thông tin thành công, NHƯNG mật khẩu thất bại: " + task.getException().getMessage());
+                        saveSuccessEvent.setValue(true); // Vẫn đóng vì thông tin đã lưu
+                    }
                 });
     }
 }
