@@ -4,14 +4,15 @@ import android.os.Bundle;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider; // <-- THÊM IMPORT
-import com.AnhQuoc.studentmanagementapp.databinding.ActivityAddEditStudentBinding;
-// KHÔNG CẦN import Firebase
+import androidx.lifecycle.ViewModelProvider;
+import com.AnhQuoc.studentmanagementapp.databinding.ActivityAddEditStudentBinding; // <-- THÊM DÒNG NÀY ĐỂ SỬA LỖI
+import dagger.hilt.android.AndroidEntryPoint;
 
+@AndroidEntryPoint // Đã thêm Hilt
 public class AddEditStudentActivity extends AppCompatActivity {
 
-    private ActivityAddEditStudentBinding binding;
-    private AddEditStudentViewModel viewModel; // <-- Biến ViewModel
+    private ActivityAddEditStudentBinding binding; // Dòng này sẽ hết báo lỗi
+    private AddEditStudentViewModel viewModel;
     private boolean isEditMode = false;
     private String studentIdToEdit;
 
@@ -21,7 +22,7 @@ public class AddEditStudentActivity extends AppCompatActivity {
         binding = ActivityAddEditStudentBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // 1. Khởi tạo ViewModel
+        // 1. Khởi tạo ViewModel (Hilt sẽ cung cấp)
         viewModel = new ViewModelProvider(this).get(AddEditStudentViewModel.class);
 
         // 2. Kiểm tra Intent (Chế độ Sửa hay Thêm)
@@ -37,8 +38,6 @@ public class AddEditStudentActivity extends AppCompatActivity {
         }
 
         // 3. QUAN SÁT (OBSERVE) DỮ LIỆU
-
-        // Quan sát dữ liệu sinh viên (cho chế độ Sửa)
         viewModel.getStudentLiveData().observe(this, student -> {
             if (student != null) {
                 binding.etStudentName.setText(student.getName());
@@ -47,14 +46,12 @@ public class AddEditStudentActivity extends AppCompatActivity {
             }
         });
 
-        // Quan sát sự kiện lưu thành công
         viewModel.getSaveSuccessEvent().observe(this, success -> {
             if (success) {
                 finish(); // Đóng Activity
             }
         });
 
-        // Quan sát thông báo
         viewModel.getToastMessage().observe(this, message -> {
             if (message != null && !message.isEmpty()) {
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
@@ -76,6 +73,4 @@ public class AddEditStudentActivity extends AppCompatActivity {
             }
         });
     }
-
-    // KHÔNG CẦN CÁC HÀM saveStudent, loadStudentData, updateStudent
 }

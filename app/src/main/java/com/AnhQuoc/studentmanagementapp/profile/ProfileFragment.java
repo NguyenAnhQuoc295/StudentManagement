@@ -14,26 +14,23 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider; // <-- THÊM IMPORT
+import androidx.lifecycle.ViewModelProvider;
 
 import com.AnhQuoc.studentmanagementapp.R;
 import com.AnhQuoc.studentmanagementapp.auth.LoginActivity;
-import com.AnhQuoc.studentmanagementapp.databinding.FragmentProfileBinding;
+import com.AnhQuoc.studentmanagementapp.databinding.FragmentProfileBinding; // <-- THÊM DÒNG NÀY ĐỂ SỬA LỖI
 import com.AnhQuoc.studentmanagementapp.model.User;
 import com.bumptech.glide.Glide;
-import com.google.firebase.auth.FirebaseAuth;
-// KHÔNG CẦN import FirebaseFirestore hay Storage nữa
+// import com.google.firebase.auth.FirebaseAuth; // Đã chuyển sang ViewModel
+import dagger.hilt.android.AndroidEntryPoint;
 
+@AndroidEntryPoint
 public class ProfileFragment extends Fragment {
 
-    private FragmentProfileBinding binding;
-    private FirebaseAuth mAuth;
+    private FragmentProfileBinding binding; // Dòng này sẽ hết báo lỗi
     private String currentUserRole;
-
-    private ProfileViewModel viewModel; // <-- Biến ViewModel
+    private ProfileViewModel viewModel;
     private ActivityResultLauncher<String> mGetContent;
-
-    // Không cần các biến Firebase db hay storageRef ở đây
 
     @Nullable
     @Override
@@ -54,22 +51,16 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        mAuth = FirebaseAuth.getInstance();
-
-        // 1. LẤY VIEWMODEL
+        // 1. LẤY VIEWMODEL (Hilt sẽ tự cung cấp)
         viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
 
-        // 2. QUAN SÁT (OBSERVE) DỮ LIỆU TỪ VIEWMODEL
-
-        // Quan sát dữ liệu người dùng
+        // 2. QUAN SÁT (OBSERVE)
         viewModel.getUserLiveData().observe(getViewLifecycleOwner(), user -> {
-            // Code này CHỈ CHẠY khi Fragment "sống" và user != null
             if (user != null) {
                 binding.tvProfileName.setText("Tên: " + user.getName());
                 binding.tvProfileRole.setText("Vai trò: " + user.getRole());
 
                 if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
-                    // Cần kiểm tra getContext() vì Glide chạy bất đồng bộ
                     if (getContext() != null) {
                         Glide.with(getContext())
                                 .load(user.getProfileImageUrl())
@@ -86,15 +77,13 @@ public class ProfileFragment extends Fragment {
             }
         });
 
-        // Quan sát thông báo (Toast)
         viewModel.getToastMessage().observe(getViewLifecycleOwner(), message -> {
             if (message != null && !message.isEmpty()) {
                 Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-                // (Có thể reset message trong ViewModel nếu cần)
             }
         });
 
-        // 3. KHỞI CHẠY ACTIVITY LAUNCHER (Giữ nguyên)
+        // 3. KHỞI CHẠY ACTIVITY LAUNCHER
         mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri != null && binding != null && getContext() != null) {
@@ -107,9 +96,6 @@ public class ProfileFragment extends Fragment {
                                 .into(binding.imgUserProfile);
                     }
                 });
-
-        // KHÔNG CẦN GỌI loadUserProfile() ở đây nữa
-        // vì ViewModel tự gọi trong constructor của nó
 
         // 4. Xử lý nút Đăng xuất
         binding.btnLogout.setOnClickListener(v -> {
@@ -133,7 +119,7 @@ public class ProfileFragment extends Fragment {
     }
 
     private void logoutUser() {
-        mAuth.signOut();
+        viewModel.logout(); // Yêu cầu ViewModel đăng xuất
         if (getActivity() == null) {
             return;
         }

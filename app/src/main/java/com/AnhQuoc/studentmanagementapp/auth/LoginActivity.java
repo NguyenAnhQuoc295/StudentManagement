@@ -6,15 +6,16 @@ import android.view.View;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider; // <-- THÊM IMPORT
+import androidx.lifecycle.ViewModelProvider;
 import com.AnhQuoc.studentmanagementapp.MainActivity;
-import com.AnhQuoc.studentmanagementapp.databinding.ActivityLoginBinding;
-// KHÔNG CẦN import Firebase
+import com.AnhQuoc.studentmanagementapp.databinding.ActivityLoginBinding; // <-- THÊM DÒNG NÀY ĐỂ SỬA LỖI
+import dagger.hilt.android.AndroidEntryPoint;
 
+@AndroidEntryPoint
 public class LoginActivity extends AppCompatActivity {
 
-    private ActivityLoginBinding binding;
-    private LoginViewModel viewModel; // <-- Biến ViewModel
+    private ActivityLoginBinding binding; // Dòng này sẽ hết báo lỗi
+    private LoginViewModel viewModel;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -22,7 +23,7 @@ public class LoginActivity extends AppCompatActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // 1. Khởi tạo ViewModel
+        // 1. Khởi tạo ViewModel (Hilt sẽ cung cấp)
         viewModel = new ViewModelProvider(this).get(LoginViewModel.class);
 
         // 2. Quan sát (Observe) LiveData
@@ -42,9 +43,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        viewModel.getIsLoadingLiveData().observe(this, isLoading -> {
-            showLoading(isLoading);
-        });
+        viewModel.getIsLoadingLiveData().observe(this, this::showLoading);
 
         // 3. Xử lý sự kiện nhấn nút đăng nhập
         binding.btnLogin.setOnClickListener(v -> {
@@ -61,10 +60,7 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    // KHÔNG CẦN các hàm loginUserWithFirebase, getUserRoleAndProceed, recordLoginHistory
-
     private void loginSuccess(String userRole) {
-        // (showLoading(false) đã được gọi trong ViewModel)
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
         intent.putExtra("USER_ROLE", userRole);
         startActivity(intent);
@@ -72,12 +68,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void showLoading(boolean isLoading) {
-        if (isLoading) {
-            binding.progressBar.setVisibility(View.VISIBLE);
-            binding.btnLogin.setEnabled(false);
-        } else {
-            binding.progressBar.setVisibility(View.GONE);
-            binding.btnLogin.setEnabled(true);
-        }
+        binding.progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        binding.btnLogin.setEnabled(!isLoading);
     }
 }

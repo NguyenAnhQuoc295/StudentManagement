@@ -5,19 +5,20 @@ import android.widget.RadioButton;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider; // <-- THÊM IMPORT
+import androidx.lifecycle.ViewModelProvider;
 import com.AnhQuoc.studentmanagementapp.R;
-import com.AnhQuoc.studentmanagementapp.databinding.ActivityAddEditUserBinding;
+import com.AnhQuoc.studentmanagementapp.databinding.ActivityAddEditUserBinding; // <-- THÊM DÒNG NÀY ĐỂ SỬA LỖI
 import com.AnhQuoc.studentmanagementapp.model.User;
-// KHÔNG CẦN import Firebase
+import dagger.hilt.android.AndroidEntryPoint;
 
+@AndroidEntryPoint // Đã thêm Hilt
 public class AddEditUserActivity extends AppCompatActivity {
 
-    private ActivityAddEditUserBinding binding;
-    private AddEditUserViewModel viewModel; // <-- Biến ViewModel
+    private ActivityAddEditUserBinding binding; // Dòng này sẽ hết báo lỗi
+    private AddEditUserViewModel viewModel;
     private boolean isEditMode = false;
     private String userIdToEdit;
-    private User currentUserData; // Vẫn cần giữ để cập nhật
+    private User currentUserData;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -25,7 +26,7 @@ public class AddEditUserActivity extends AppCompatActivity {
         binding = ActivityAddEditUserBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // 1. Khởi tạo ViewModel
+        // 1. Khởi tạo ViewModel (Hilt sẽ cung cấp)
         viewModel = new ViewModelProvider(this).get(AddEditUserViewModel.class);
 
         // 2. Xử lý nút quay lại
@@ -73,9 +74,7 @@ public class AddEditUserActivity extends AppCompatActivity {
             }
         });
 
-        viewModel.getIsLoading().observe(this, isLoading -> {
-            showLoading(isLoading);
-        });
+        viewModel.getIsLoading().observe(this, this::showLoading);
 
         // 5. Setup Listeners
         binding.btnSaveUser.setOnClickListener(v -> {
@@ -120,6 +119,4 @@ public class AddEditUserActivity extends AppCompatActivity {
         binding.btnSaveUser.setEnabled(!isLoading);
         // Bạn cũng có thể thêm ProgressBar và Bật/Tắt nó ở đây
     }
-
-    // KHÔNG CẦN CÁC HÀM loadUserData, createUserInAuthAndFirestore, updateUserInFirestore
 }

@@ -1,3 +1,4 @@
+// TỆP ĐƯỢC CẬP NHẬT
 package com.AnhQuoc.studentmanagementapp.user;
 
 import android.content.Intent;
@@ -12,25 +13,28 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider; // <-- THÊM IMPORT
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.AnhQuoc.studentmanagementapp.R;
 import com.AnhQuoc.studentmanagementapp.databinding.FragmentUserListBinding;
 import com.AnhQuoc.studentmanagementapp.model.User;
-// KHÔNG CẦN import FirebaseFirestore
+// import com.google.firebase.firestore.FirebaseFirestore; // <-- XÓA
 
 import java.util.ArrayList;
 import java.util.List;
 
+import dagger.hilt.android.AndroidEntryPoint; // <-- THÊM
+
+@AndroidEntryPoint // <-- THÊM
 public class UserListFragment extends Fragment {
 
     private FragmentUserListBinding binding;
     private UserAdapter userAdapter;
-    private List<User> userList; // Vẫn cần list này cho Adapter
+    private List<User> userList;
 
-    private UserListViewModel viewModel; // <-- Biến ViewModel
-    // private FirebaseFirestore db; // Không cần nữa
+    private UserListViewModel viewModel;
+    // private FirebaseFirestore db; // <-- XÓA
 
     @Nullable
     @Override
@@ -44,11 +48,11 @@ public class UserListFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // 1. Khởi tạo
-        // db = FirebaseFirestore.getInstance(); // Không cần
+        // db = FirebaseFirestore.getInstance(); // <-- XÓA
         userList = new ArrayList<>();
         viewModel = new ViewModelProvider(this).get(UserListViewModel.class);
 
-        // 2. Setup Adapter (với Listener)
+        // 2. Setup Adapter
         userAdapter = new UserAdapter(userList, new UserAdapter.OnUserClickListener() {
             @Override
             public void onUserClick(User user) {
@@ -59,16 +63,13 @@ public class UserListFragment extends Fragment {
 
             @Override
             public void onDeleteClick(User user) {
-                if (getContext() == null) {
-                    return;
-                }
+                if (getContext() == null) return;
                 new AlertDialog.Builder(getContext())
                         .setTitle("Xác nhận Xóa")
                         .setMessage("Bạn có chắc muốn xóa " + user.getName() + "?\n(Hành động này không thể hoàn tác)")
                         .setPositiveButton("Xóa", (dialog, which) -> {
-                            // Yêu cầu ViewModel xóa
-                            String currentQuery = binding.searchViewUsers.getQuery().toString();
-                            viewModel.deleteUserFromFirestore(user.getUserId(), currentQuery);
+                            // Yêu cầu ViewModel xóa (KHÔNG CẦN currentQuery NỮA VÌ LÀ REAL-TIME)
+                            viewModel.deleteUserFromFirestore(user.getUserId());
                         })
                         .setNegativeButton("Hủy", null)
                         .setIcon(R.drawable.ic_delete)
@@ -89,7 +90,6 @@ public class UserListFragment extends Fragment {
 
         // 4. QUAN SÁT (OBSERVE) DỮ LIỆU TỪ VIEWMODEL
         viewModel.getUserListLiveData().observe(getViewLifecycleOwner(), updatedUserList -> {
-            // Khi LiveData thay đổi, cập nhật danh sách của Adapter
             userList.clear();
             userList.addAll(updatedUserList);
             userAdapter.notifyDataSetChanged();
@@ -101,46 +101,49 @@ public class UserListFragment extends Fragment {
             }
         });
 
-        // 5. Xử lý sự kiện nhấn nút "+" (Giữ nguyên)
+        // 5. Xử lý sự kiện nhấn nút "+"
         binding.fabAddUser.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), AddEditUserActivity.class);
             startActivity(intent);
         });
 
         // 6. Tải dữ liệu ban đầu
-        viewModel.loadUsersFromFirestore(""); // Tải tất cả khi query rỗng
+        viewModel.subscribeToUserUpdates(""); // Tải tất cả
 
         // 7. Xử lý thanh tìm kiếm
         binding.searchViewUsers.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                viewModel.loadUsersFromFirestore(query);
+                viewModel.subscribeToUserUpdates(query);
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                viewModel.loadUsersFromFirestore(newText);
+                viewModel.subscribeToUserUpdates(newText);
                 return true;
             }
         });
     }
 
-    // KHÔNG CẦN CÁC HÀM loadUsersFromFirestore và deleteUserFromFirestore ở đây nữa
-
+    /**
+     * XÓA BỎ onResume()
+     * Chúng ta không cần tải lại dữ liệu thủ công nữa vì đã có listener real-time.
+     */
+    /*
     @Override
     public void onResume() {
         super.onResume();
-        // Tải lại dữ liệu khi quay lại màn hình này
         if (binding != null) {
             String currentQuery = binding.searchViewUsers.getQuery().toString();
             viewModel.loadUsersFromFirestore(currentQuery);
         }
     }
+    */
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null; // Tránh memory leak
+        binding = null;
     }
 }

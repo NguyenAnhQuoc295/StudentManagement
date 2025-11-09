@@ -28,6 +28,9 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 
 public class StudentDetailsActivity extends AppCompatActivity {
 
@@ -166,11 +169,8 @@ public class StudentDetailsActivity extends AppCompatActivity {
         binding.rvCertificates.setAdapter(certificateAdapter);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        viewModel.refreshData();
-    }
+
+
 
     private void setupButtonListeners() {
         binding.btnDeleteStudent.setOnClickListener(v -> {

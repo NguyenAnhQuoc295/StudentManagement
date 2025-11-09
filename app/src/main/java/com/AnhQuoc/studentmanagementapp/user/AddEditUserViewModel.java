@@ -1,142 +1,80 @@
 package com.AnhQuoc.studentmanagementapp.user;
 
-import android.util.Log; // <-- Thêm import
-
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData; // <-- THÊM IMPORT NÀY
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+import com.AnhQuoc.studentmanagementapp.data.UserRepository;
 import com.AnhQuoc.studentmanagementapp.model.User;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
+import javax.inject.Inject;
+import dagger.hilt.android.lifecycle.HiltViewModel;
 
+@HiltViewModel
 public class AddEditUserViewModel extends ViewModel {
 
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private FirebaseAuth mAuth = FirebaseAuth.getInstance();
+    private UserRepository userRepository;
+    private LiveData<User> userLiveData;
 
-    private MutableLiveData<User> userLiveData = new MutableLiveData<>();
-    private MutableLiveData<String> toastMessage = new MutableLiveData<>();
+    // SỬA LỖI:
+    // 1. Tạo một MutableLiveData cục bộ cho các toast của ViewModel này
+    private MutableLiveData<String> _toastMessage = new MutableLiveData<>();
+
+    // 2. Tạo một MediatorLiveData để gộp toast cục bộ VÀ toast từ repository
+    private MediatorLiveData<String> toastMessageMediator = new MediatorLiveData<>();
+
+    // (Các LiveData khác giữ nguyên)
     private MutableLiveData<Boolean> saveSuccessEvent = new MutableLiveData<>(false);
     private MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
 
+    @Inject
+    public AddEditUserViewModel(UserRepository userRepository) {
+        this.userRepository = userRepository;
+        this.userLiveData = userRepository.getSingleUserLiveData();
+
+        // 3. Hợp nhất các nguồn toast
+        // Nguồn 1: Lắng nghe toast cục bộ (_toastMessage)
+        toastMessageMediator.addSource(_toastMessage, message -> toastMessageMediator.setValue(message));
+        // Nguồn 2: Lắng nghe toast từ Repository (cho các hàm async)
+        toastMessageMediator.addSource(userRepository.getToastMessage(), message -> toastMessageMediator.setValue(message));
+    }
+
+    // --- Getters ---
     public LiveData<User> getUserLiveData() { return userLiveData; }
-    public LiveData<String> getToastMessage() { return toastMessage; }
+    // 4. Getter giờ sẽ trả về Mediator, Activity/Fragment sẽ quan sát cái này
+    public LiveData<String> getToastMessage() { return toastMessageMediator; }
     public LiveData<Boolean> getSaveSuccessEvent() { return saveSuccessEvent; }
     public LiveData<Boolean> getIsLoading() { return isLoading; }
 
     public void loadUserData(String userId) {
-        db.collection("users").document(userId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        User user = documentSnapshot.toObject(User.class);
-                        userLiveData.setValue(user);
-                    } else {
-                        toastMessage.setValue("Không tìm thấy người dùng");
-                        saveSuccessEvent.setValue(true); // Đóng
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    toastMessage.setValue("Lỗi khi tải dữ liệu");
-                    saveSuccessEvent.setValue(true); // Đóng
-                });
+        // Yêu cầu repo tải, repo sẽ post lỗi/thành công vào LiveData của nó
+        userRepository.loadUserDataForEdit(userId);
     }
 
     public void createUserInAuthAndFirestore(String email, String password, String ageStr, String phone, String role, String status) {
         if (email.isEmpty() || password.isEmpty() || ageStr.isEmpty() || phone.isEmpty()) {
-            toastMessage.setValue("Vui lòng nhập đầy đủ thông tin");
+            // 5. SỬA LỖI: Giờ chúng ta post lên LiveData cục bộ
+            _toastMessage.setValue("Vui lòng nhập đầy đủ thông tin");
             return;
         }
-
         isLoading.setValue(true);
+        // Quan sát sự kiện thành công để tắt loading
+        saveSuccessEvent.observeForever(success -> isLoading.setValue(false));
 
-        mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        FirebaseUser firebaseUser = mAuth.getCurrentUser();
-                        String uid = firebaseUser.getUid();
-                        int age = Integer.parseInt(ageStr);
-                        User newUser = new User(email, age, phone, status, role);
-
-                        db.collection("users").document(uid)
-                                .set(newUser)
-                                .addOnSuccessListener(aVoid -> {
-                                    isLoading.setValue(false);
-                                    toastMessage.setValue("Thêm người dùng thành công!");
-                                    saveSuccessEvent.setValue(true);
-                                })
-                                .addOnFailureListener(e -> {
-                                    isLoading.setValue(false);
-                                    toastMessage.setValue("Lỗi khi lưu vào Firestore: " + e.getMessage());
-                                    // (Nâng cao: nên xóa tài khoản Auth nếu lưu Firestore thất bại)
-                                });
-
-                    } else {
-                        isLoading.setValue(false);
-                        toastMessage.setValue("Lỗi khi tạo tài khoản: " + task.getException().getMessage());
-                    }
-                });
+        // 6. Yêu cầu Repo làm việc (NÓ SẼ DÙNG TOAST NỘI BỘ CỦA NÓ)
+        userRepository.createUserInAuthAndFirestore(email, password, ageStr, phone, role, status, saveSuccessEvent);
     }
 
-    // SỬA LẠI HÀM NÀY ĐỂ XỬ LÝ MẬT KHẨU
     public void updateUserInFirestore(String userIdToEdit, String newPassword, String ageStr, String phone, String role, String status, User currentUserData) {
         if (ageStr.isEmpty() || phone.isEmpty()) {
-            toastMessage.setValue("Vui lòng nhập đầy đủ thông tin (trừ mật khẩu)");
+            // 5. SỬA LỖI: Giờ chúng ta post lên LiveData cục bộ
+            _toastMessage.setValue("Vui lòng nhập đầy đủ thông tin (trừ mật khẩu)");
             return;
         }
-
         isLoading.setValue(true);
+        // Quan sát sự kiện thành công để tắt loading
+        saveSuccessEvent.observeForever(success -> isLoading.setValue(false));
 
-        // Cập nhật thông tin trong Firestore
-        currentUserData.setAge(Integer.parseInt(ageStr));
-        currentUserData.setPhone(phone);
-        currentUserData.setRole(role);
-        currentUserData.setStatus(status);
-
-        db.collection("users").document(userIdToEdit)
-                .set(currentUserData)
-                .addOnSuccessListener(aVoid -> {
-                    // Cập nhật thông tin thành công,
-                    // BÂY GIỜ kiểm tra xem có cần cập nhật mật khẩu không
-                    if (newPassword != null && !newPassword.isEmpty()) {
-                        updatePasswordInAuth(newPassword);
-                    } else {
-                        // Không có mật khẩu mới, kết thúc
-                        isLoading.setValue(false);
-                        toastMessage.setValue("Cập nhật thông tin thành công!");
-                        saveSuccessEvent.setValue(true);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    isLoading.setValue(false);
-                    toastMessage.setValue("Lỗi khi cập nhật Firestore: " + e.getMessage());
-                });
-    }
-
-    // HÀM MỚI ĐỂ CẬP NHẬT MẬT KHẨU TRONG FIREBASE AUTH
-    private void updatePasswordInAuth(String newPassword) {
-        FirebaseUser user = mAuth.getCurrentUser();
-        if (user == null) {
-            // Trường hợp này hiếm khi xảy ra nếu logic đúng
-            isLoading.setValue(false);
-            toastMessage.setValue("Lỗi: Không tìm thấy người dùng hiện tại để đổi mật khẩu.");
-            return;
-        }
-
-        user.updatePassword(newPassword)
-                .addOnCompleteListener(task -> {
-                    isLoading.setValue(false);
-                    if (task.isSuccessful()) {
-                        Log.d("AddEditUserViewModel", "Cập nhật mật khẩu Auth thành công.");
-                        toastMessage.setValue("Cập nhật thông tin VÀ mật khẩu thành công!");
-                        saveSuccessEvent.setValue(true);
-                    } else {
-                        // Thất bại (ví dụ: mật khẩu quá yếu, hoặc cần đăng nhập lại)
-                        Log.w("AddEditUserViewModel", "Lỗi cập nhật mật khẩu Auth: ", task.getException());
-                        toastMessage.setValue("Cập nhật thông tin thành công, NHƯNG mật khẩu thất bại: " + task.getException().getMessage());
-                        saveSuccessEvent.setValue(true); // Vẫn đóng vì thông tin đã lưu
-                    }
-                });
+        // 6. Yêu cầu Repo làm việc (NÓ SẼ DÙNG TOAST NỘI BỘ CỦA NÓ)
+        userRepository.updateUserInFirestore(userIdToEdit, newPassword, ageStr, phone, role, status, currentUserData, saveSuccessEvent);
     }
 }

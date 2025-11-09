@@ -1,9 +1,10 @@
+// TỆP ĐƯỢC CẬP NHẬT
 package com.AnhQuoc.studentmanagementapp;
 
 import android.os.Bundle;
-import android.view.Menu; // <-- THÊM IMPORT NÀY
+import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View; // <-- THÊM IMPORT NÀY
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,10 +19,13 @@ import com.AnhQuoc.studentmanagementapp.student.StudentListFragment;
 import com.AnhQuoc.studentmanagementapp.user.UserListFragment;
 import com.google.android.material.navigation.NavigationBarView;
 
+import dagger.hilt.android.AndroidEntryPoint; // <-- THÊM DÒNG NÀY
+
+@AndroidEntryPoint // <-- THÊM DÒNG NÀY
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
-    private String currentUserRole; // <-- THÊM BIẾN ĐỂ LƯU VAI TRÒ
+    private String currentUserRole;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,10 +33,12 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // (Toàn bộ code còn lại trong onCreate giữ nguyên)
+        // ...
+
         // 1. Nhận vai trò từ LoginActivity
         currentUserRole = getIntent().getStringExtra("USER_ROLE");
         if (currentUserRole == null) {
-            // Xử lý lỗi nếu không có vai trò (mặc định là Employee)
             currentUserRole = "Employee";
         }
 
@@ -54,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
                     loadFragment(new StudentListFragment(), false);
                     return true;
                 } else if (itemId == R.id.nav_users) {
-                    // (Đã được kiểm tra bằng cách ẩn/hiện)
                     loadFragment(new UserListFragment(), false);
                     return true;
                 } else if (itemId == R.id.nav_profile) {
@@ -67,26 +72,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupRoleBasedUI() {
+        // (Hàm này giữ nguyên)
+        // ...
         Menu navMenu = binding.bottomNavigation.getMenu();
         MenuItem userTab = navMenu.findItem(R.id.nav_users);
 
         if ("Admin".equals(currentUserRole)) {
-            // Nếu là Admin, cho phép tất cả
             userTab.setVisible(true);
         } else if ("Manager".equals(currentUserRole)) {
-            // Nếu là Manager, ẩn tab "Người dùng"
             userTab.setVisible(false);
         } else {
-            // Nếu là Employee, ẩn tab "Người dùng"
             userTab.setVisible(false);
         }
     }
 
     private void loadFragment(Fragment fragment, boolean isFirstTime) {
+        // (Hàm này giữ nguyên)
+        // ...
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
 
-        // (Nâng cao: Gửi vai trò vào Fragment để phân quyền sâu hơn)
         Bundle bundle = new Bundle();
         bundle.putString("USER_ROLE", currentUserRole);
         fragment.setArguments(bundle);

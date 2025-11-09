@@ -1,26 +1,40 @@
+// TỆP ĐƯỢC CẬP NHẬT
 package com.AnhQuoc.studentmanagementapp.user;
 
-import android.util.Log;
+// import android.util.Log; // Không cần nữa
 
 import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
+// import androidx.lifecycle.MutableLiveData; // Sẽ lấy từ Repo
 import androidx.lifecycle.ViewModel;
 
+import com.AnhQuoc.studentmanagementapp.data.UserRepository; // <-- THÊM
 import com.AnhQuoc.studentmanagementapp.model.User;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+// import com.google.firebase.firestore.FirebaseFirestore; // <-- XÓA
+// import com.google.firebase.firestore.Query; // <-- XÓA
+// import com.google.firebase.firestore.QueryDocumentSnapshot; // <-- XÓA
 
-import java.util.ArrayList;
+// import java.util.ArrayList; // <-- XÓA
 import java.util.List;
 
+import javax.inject.Inject; // <-- THÊM
+import dagger.hilt.android.lifecycle.HiltViewModel; // <-- THÊM
+
+@HiltViewModel
 public class UserListViewModel extends ViewModel {
 
-    private static final String TAG = "UserListViewModel";
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    // private static final String TAG = "UserListViewModel"; // <-- XÓA
+    // private FirebaseFirestore db = FirebaseFirestore.getInstance(); // <-- XÓA
+    private UserRepository userRepository; // <-- THÊM
 
-    private MutableLiveData<List<User>> userListLiveData = new MutableLiveData<>();
-    private MutableLiveData<String> toastMessage = new MutableLiveData<>();
+    private LiveData<List<User>> userListLiveData; // <-- SỬA
+    private LiveData<String> toastMessage; // <-- SỬA
+
+    @Inject // <-- THÊM
+    public UserListViewModel(UserRepository userRepository) {
+        this.userRepository = userRepository;
+        this.userListLiveData = userRepository.getUserListLiveData();
+        this.toastMessage = userRepository.getToastMessage();
+    }
 
     public LiveData<List<User>> getUserListLiveData() {
         return userListLiveData;
@@ -30,48 +44,20 @@ public class UserListViewModel extends ViewModel {
         return toastMessage;
     }
 
-    public void loadUsersFromFirestore(String searchQuery) {
-        Query query = db.collection("users");
-
-        if (searchQuery != null && !searchQuery.isEmpty()) {
-            query = query.orderBy("name")
-                    .startAt(searchQuery)
-                    .endAt(searchQuery + "\uf8ff");
-        } else {
-            query = query.orderBy("name", Query.Direction.ASCENDING);
-        }
-
-        query.get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        List<User> userList = new ArrayList<>();
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            User user = document.toObject(User.class);
-                            user.setUserId(document.getId());
-                            userList.add(user);
-                        }
-                        userListLiveData.setValue(userList); // Gửi danh sách
-                    } else {
-                        Log.w(TAG, "Error getting documents.", task.getException());
-                        toastMessage.setValue("Lỗi khi tải danh sách người dùng");
-                    }
-                });
+    // Đổi tên hàm
+    public void subscribeToUserUpdates(String searchQuery) {
+        userRepository.subscribeToUserUpdates(searchQuery);
     }
 
-    public void deleteUserFromFirestore(String userId, String currentSearchQuery) {
+    public void deleteUserFromFirestore(String userId) {
         if (userId == null || userId.isEmpty()) return;
+        userRepository.deleteUserFromFirestore(userId);
+    }
 
-        // TODO: Nên xóa cả tài khoản trong Firebase Auth
-
-        db.collection("users").document(userId)
-                .delete()
-                .addOnSuccessListener(aVoid -> {
-                    toastMessage.setValue("Xóa người dùng thành công");
-                    // Tải lại danh sách sau khi xóa
-                    loadUsersFromFirestore(currentSearchQuery);
-                })
-                .addOnFailureListener(e -> {
-                    toastMessage.setValue("Lỗi khi xóa: " + e.getMessage());
-                });
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        // Hủy lắng nghe
+        userRepository.clearUserListListener();
     }
 }

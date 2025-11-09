@@ -4,18 +4,19 @@ import android.os.Bundle;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider; // <-- THÊM IMPORT
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import com.AnhQuoc.studentmanagementapp.databinding.ActivityLoginHistoryBinding;
+import com.AnhQuoc.studentmanagementapp.databinding.ActivityLoginHistoryBinding; // <-- THÊM DÒNG NÀY ĐỂ SỬA LỖI
 import com.AnhQuoc.studentmanagementapp.model.LoginHistory;
-// KHÔNG CẦN import Firebase
 import java.util.ArrayList;
 import java.util.List;
+import dagger.hilt.android.AndroidEntryPoint;
 
+@AndroidEntryPoint // Đã thêm Hilt
 public class LoginHistoryActivity extends AppCompatActivity {
 
-    private ActivityLoginHistoryBinding binding;
-    private LoginHistoryViewModel viewModel; // <-- Biến ViewModel
+    private ActivityLoginHistoryBinding binding; // Dòng này sẽ hết báo lỗi
+    private LoginHistoryViewModel viewModel;
     private LoginHistoryAdapter adapter;
     private List<LoginHistory> historyList;
     private String userIdToView;
@@ -67,6 +68,4 @@ public class LoginHistoryActivity extends AppCompatActivity {
         binding.rvLoginHistory.setLayoutManager(new LinearLayoutManager(this));
         binding.rvLoginHistory.setAdapter(adapter);
     }
-
-    // KHÔNG CẦN HÀM loadLoginHistory() ở đây
 }

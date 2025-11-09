@@ -1,22 +1,22 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.google.gms.google.services)
+    alias(libs.plugins.hilt.android) // Plugin bạn đã thêm (ĐÚNG)
 }
 
 android {
     namespace = "com.AnhQuoc.studentmanagementapp"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36 // Bạn có thể đổi thành 34 nếu chưa tải SDK 36
 
     defaultConfig {
         applicationId = "com.AnhQuoc.studentmanagementapp"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 36 // Bạn có thể đổi thành 34 nếu chưa tải SDK 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner =
+
             "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -27,6 +27,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
         }
 
     }
@@ -49,7 +50,14 @@ dependencies {
 
     implementation("androidx.lifecycle:lifecycle-livedata:2.6.2")
 
+
     annotationProcessor("androidx.lifecycle:lifecycle-compiler:2.6.2")
+
+    // === SỬA LỖI: THÊM 2 DÒNG HILT VÀO ĐÂY ===
+    implementation(libs.hilt.android)
+    // Vì dự án của bạn là Java, chúng ta dùng annotationProcessor
+    annotationProcessor(libs.hilt.compiler)
+    // ------------------------------------
 
     // SỬA LẠI: Bỏ 1 dòng trùng lặp
     implementation("com.google.firebase:firebase-auth")

@@ -1,3 +1,4 @@
+// TỆP ĐƯỢC CẬP NHẬT
 package com.AnhQuoc.studentmanagementapp.student;
 
 import android.app.Activity;
@@ -16,29 +17,28 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider; // <-- THÊM IMPORT
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.AnhQuoc.studentmanagementapp.databinding.FragmentStudentListBinding;
 import com.AnhQuoc.studentmanagementapp.model.Student;
-// KHÔNG CẦN import FirebaseFirestore
 import com.google.firebase.firestore.Query;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import dagger.hilt.android.AndroidEntryPoint; // <-- IMPORT MỚI
+
+@AndroidEntryPoint // <-- THÊM DÒNG NÀY
 public class StudentListFragment extends Fragment {
 
     private FragmentStudentListBinding binding;
     private StudentAdapter studentAdapter;
-    private List<Student> studentList; // Vẫn cần list cho Adapter
+    private List<Student> studentList;
     private String currentUserRole;
-    private StudentListViewModel viewModel; // <-- Biến ViewModel
+    private StudentListViewModel viewModel;
 
-    // === LAUNCHER MỚI ĐỂ IMPORT ===
     private ActivityResultLauncher<String> importCsvLauncher;
-
-    // === LAUNCHER MỚI ĐỂ EXPORT ===
     private ActivityResultLauncher<Intent> exportCsvLauncher;
 
 
@@ -63,10 +63,10 @@ public class StudentListFragment extends Fragment {
 
         // 1. Khởi tạo
         studentList = new ArrayList<>();
+        // Hilt sẽ tự động xử lý dòng này để cung cấp ViewModel chính xác
         viewModel = new ViewModelProvider(this).get(StudentListViewModel.class);
 
-        // 2. Setup Adapter
-        // ... (giữ nguyên code setup adapter) ...
+        // 2. Setup Adapter (Giữ nguyên)
         studentAdapter = new StudentAdapter(studentList, new StudentAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(Student student) {
@@ -76,25 +76,24 @@ public class StudentListFragment extends Fragment {
                 startActivity(intent);
             }
         });
-
         binding.rvStudents.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.rvStudents.setAdapter(studentAdapter);
 
 
-        // 3. Phân quyền UI
+        // 3. Phân quyền UI (Giữ nguyên)
         if ("Employee".equals(currentUserRole)) {
             binding.fabAddStudent.setVisibility(View.GONE);
             binding.btnSortStudents.setVisibility(View.GONE);
-            binding.btnImportStudents.setVisibility(View.GONE); // THÊM
-            binding.btnExportStudents.setVisibility(View.GONE); // THÊM
+            binding.btnImportStudents.setVisibility(View.GONE);
+            binding.btnExportStudents.setVisibility(View.GONE);
         } else {
             binding.fabAddStudent.setVisibility(View.VISIBLE);
             binding.btnSortStudents.setVisibility(View.VISIBLE);
-            binding.btnImportStudents.setVisibility(View.VISIBLE); // THÊM
-            binding.btnExportStudents.setVisibility(View.VISIBLE); // THÊM
+            binding.btnImportStudents.setVisibility(View.VISIBLE);
+            binding.btnExportStudents.setVisibility(View.VISIBLE);
         }
 
-        // 4. QUAN SÁT (OBSERVE) DỮ LIỆU TỪ VIEWMODEL
+        // 4. QUAN SÁT (OBSERVE) DỮ LIỆU TỪ VIEWMODEL (Giữ nguyên)
         viewModel.getStudentListLiveData().observe(getViewLifecycleOwner(), updatedList -> {
             studentList.clear();
             studentList.addAll(updatedList);
@@ -107,17 +106,14 @@ public class StudentListFragment extends Fragment {
             }
         });
 
-        // === QUAN SÁT DỮ LIỆU CSV ĐỂ EXPORT ===
         viewModel.getExportCsvData().observe(getViewLifecycleOwner(), csvData -> {
             if (csvData != null && !csvData.isEmpty()) {
                 createFileForExport(csvData);
-                // SỬA LỖI: ĐÃ XÓA DÒNG GỌI setValue() BỊ LỖI
             }
         });
 
 
-        // 5. Setup Listeners
-        // ... (giữ nguyên code fabAddStudent, btnSortStudents, searchViewStudents) ...
+        // 5. Setup Listeners (Giữ nguyên)
         binding.fabAddStudent.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), AddEditStudentActivity.class);
             startActivity(intent);
@@ -130,36 +126,34 @@ public class StudentListFragment extends Fragment {
         binding.searchViewStudents.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                viewModel.loadStudentsFromFirestore(query);
+                viewModel.subscribeToStudentUpdates(query);
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                viewModel.loadStudentsFromFirestore(newText);
+                viewModel.subscribeToStudentUpdates(newText);
                 return true;
             }
         });
 
-        // === KÍCH HOẠT LAUNCHER ===
         setupActivityLaunchers();
 
-        // === GÁN SỰ KIỆN CHO NÚT MỚI ===
         binding.btnImportStudents.setOnClickListener(v -> {
             importCsvLauncher.launch("text/csv");
         });
 
         binding.btnExportStudents.setOnClickListener(v -> {
-            viewModel.exportStudentsToCsv(); // ViewModel sẽ chuẩn bị dữ liệu
+            viewModel.exportStudentsToCsv();
         });
 
 
-        // 6. Tải dữ liệu ban đầu
-        viewModel.loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
+        // 6. Tải dữ liệu ban đầu (Giữ nguyên)
+        viewModel.subscribeToStudentUpdates(binding.searchViewStudents.getQuery().toString());
     }
 
     private void setupActivityLaunchers() {
-        // Launcher cho Import
+        // (Giữ nguyên toàn bộ code của hàm này)
         importCsvLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
                 uri -> {
@@ -169,13 +163,12 @@ public class StudentListFragment extends Fragment {
                 }
         );
 
-        // Launcher cho Export
         exportCsvLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         Uri uri = result.getData().getData();
-                        String csvData = viewModel.getExportCsvData().getValue(); // Lấy lại data
+                        String csvData = viewModel.getExportCsvData().getValue();
                         if (uri != null && csvData != null && getContext() != null) {
                             try (OutputStream outputStream = getContext().getContentResolver().openOutputStream(uri)) {
                                 outputStream.write(csvData.getBytes(StandardCharsets.UTF_8));
@@ -183,15 +176,12 @@ public class StudentListFragment extends Fragment {
                             } catch (Exception e) {
                                 Toast.makeText(getContext(), "Lỗi khi lưu tệp: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                             } finally {
-                                // SỬA LỖI: Reset dữ liệu ở đây
                                 viewModel.clearExportData();
                             }
                         } else {
-                            // SỬA LỖI: Reset dữ liệu nếu có lỗi
                             viewModel.clearExportData();
                         }
                     } else {
-                        // SỬA LỖI: Reset dữ liệu nếu người dùng hủy
                         viewModel.clearExportData();
                     }
                 }
@@ -199,6 +189,7 @@ public class StudentListFragment extends Fragment {
     }
 
     private void createFileForExport(String csvData) {
+        // (Giữ nguyên toàn bộ code của hàm này)
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("text/csv");
@@ -207,7 +198,7 @@ public class StudentListFragment extends Fragment {
     }
 
     private void showSortDialog() {
-        // ... (giữ nguyên code) ...
+        // (Giữ nguyên toàn bộ code của hàm này)
         final String[] sortOptions = {
                 "Tên (A-Z)",
                 "Tên (Z-A)",
@@ -215,7 +206,6 @@ public class StudentListFragment extends Fragment {
                 "Tuổi (Giảm dần)"
         };
 
-        // Lấy trạng thái sắp xếp hiện tại từ ViewModel
         int checkedItem = 0;
         String sortField = viewModel.getCurrentSortField();
         Query.Direction direction = viewModel.getCurrentSortDirection();
@@ -252,7 +242,7 @@ public class StudentListFragment extends Fragment {
                             break;
                     }
                     if (binding != null) {
-                        viewModel.loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
+                        viewModel.subscribeToStudentUpdates(binding.searchViewStudents.getQuery().toString());
                     }
                     dialog.dismiss();
                 })
@@ -261,13 +251,12 @@ public class StudentListFragment extends Fragment {
     }
 
 
+    /*
     @Override
     public void onResume() {
-        super.onResume();
-        if (binding != null) {
-            viewModel.loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
-        }
+        // (Đã bị xóa ở bước trước)
     }
+    */
 
     @Override
     public void onDestroyView() {
