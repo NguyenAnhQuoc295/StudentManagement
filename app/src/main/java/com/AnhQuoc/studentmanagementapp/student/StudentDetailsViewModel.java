@@ -1,5 +1,7 @@
 package com.AnhQuoc.studentmanagementapp.student;
 
+import android.content.ContentResolver;
+import android.net.Uri;
 import android.util.Log;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -9,6 +11,11 @@ import com.AnhQuoc.studentmanagementapp.model.Student;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.WriteBatch;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +36,9 @@ public class StudentDetailsViewModel extends ViewModel {
     // LiveData cho sự kiện đóng Activity (ví dụ: sau khi xóa)
     private MutableLiveData<Boolean> closeActivityEvent = new MutableLiveData<>(false);
 
+    // LiveData mới cho Export
+    private MutableLiveData<String> exportCertCsvData = new MutableLiveData<>();
+
     // Getters
     public LiveData<Student> getStudentLiveData() {
         return studentLiveData;
@@ -42,6 +52,12 @@ public class StudentDetailsViewModel extends ViewModel {
     public LiveData<Boolean> getCloseActivityEvent() {
         return closeActivityEvent;
     }
+    // Getter mới
+    public LiveData<String> getExportCertCsvData() {
+        return exportCertCsvData;
+    }
+
+    // ... (Giữ nguyên hàm setStudentId, refreshData, loadStudentData) ...
 
     // Hàm này được Activity gọi đầu tiên
     public void setStudentId(String studentId) {
@@ -96,7 +112,7 @@ public class StudentDetailsViewModel extends ViewModel {
     }
 
     public void deleteStudent() {
-        // (Nâng cao: Nên xóa cả sub-collection, nhưng hiện tại ta chỉ xóa student)
+        // ... (Giữ nguyên) ...
         db.collection("students").document(currentStudentId)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
@@ -107,6 +123,7 @@ public class StudentDetailsViewModel extends ViewModel {
     }
 
     public void saveCertificateToFirestore(String name, String date) {
+        // ... (Giữ nguyên) ...
         Certificate certificate = new Certificate(name, date);
         db.collection("students").document(currentStudentId)
                 .collection("certificates")
@@ -119,6 +136,7 @@ public class StudentDetailsViewModel extends ViewModel {
     }
 
     public void deleteCertificateFromFirestore(String certificateId) {
+        // ... (Giữ nguyên) ...
         db.collection("students").document(currentStudentId)
                 .collection("certificates").document(certificateId)
                 .delete()
@@ -130,6 +148,7 @@ public class StudentDetailsViewModel extends ViewModel {
     }
 
     public void updateCertificateInFirestore(String certificateId, String newName, String newDate) {
+        // ... (Giữ nguyên) ...
         DocumentReference certRef = db.collection("students").document(currentStudentId)
                 .collection("certificates").document(certificateId);
 
@@ -143,5 +162,72 @@ public class StudentDetailsViewModel extends ViewModel {
                     loadCertificates(); // Tải lại
                 })
                 .addOnFailureListener(e -> toastMessage.setValue("Lỗi khi cập nhật: " + e.getMessage()));
+    }
+
+    // === CHỨC NĂNG MỚI: EXPORT CERTIFICATES ===
+    public void exportCertificatesToCsv() {
+        List<Certificate> currentList = certificatesLiveData.getValue();
+        if (currentList == null || currentList.isEmpty()) {
+            toastMessage.setValue("Không có chứng chỉ để xuất");
+            return;
+        }
+
+        StringBuilder csvContent = new StringBuilder();
+        csvContent.append("Name,DateIssued\n"); // Header
+        for (Certificate cert : currentList) {
+            csvContent.append(cert.getName()).append(",");
+            csvContent.append(cert.getDateIssued()).append("\n");
+        }
+        exportCertCsvData.setValue(csvContent.toString());
+    }
+
+    // === CHỨC NĂNG MỚI: IMPORT CERTIFICATES ===
+    public void importCertificatesFromCsv(Uri uri, ContentResolver contentResolver) {
+        if (uri == null) return;
+
+        List<Certificate> certsToImport = new ArrayList<>();
+        try (InputStream inputStream = contentResolver.openInputStream(uri);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+
+            String line;
+            boolean isHeader = true;
+            while ((line = reader.readLine()) != null) {
+                if (isHeader) {
+                    isHeader = false;
+                    continue;
+                }
+                String[] columns = line.split(",");
+                if (columns.length >= 2) {
+                    String name = columns[0].trim();
+                    String date = columns[1].trim();
+                    certsToImport.add(new Certificate(name, date));
+                }
+            }
+
+            if (certsToImport.isEmpty()) {
+                toastMessage.setValue("Không tìm thấy dữ liệu hợp lệ trong tệp");
+                return;
+            }
+
+            WriteBatch batch = db.batch();
+            for (Certificate cert : certsToImport) {
+                DocumentReference docRef = db.collection("students").document(currentStudentId)
+                        .collection("certificates").document();
+                batch.set(docRef, cert);
+            }
+
+            batch.commit()
+                    .addOnSuccessListener(aVoid -> {
+                        toastMessage.setValue("Nhập " + certsToImport.size() + " chứng chỉ thành công!");
+                        loadCertificates(); // Tải lại
+                    })
+                    .addOnFailureListener(e -> {
+                        toastMessage.setValue("Lỗi khi nhập: " + e.getMessage());
+                    });
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error importing CSV", e);
+            toastMessage.setValue("Lỗi đọc tệp: " + e.getMessage());
+        }
     }
 }

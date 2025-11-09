@@ -7,43 +7,6 @@
     android:background="@color/colorBackgroundSepia"
     tools:context=".student.StudentDetailsActivity">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/app_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fitsSystemWindows="true"
-        android:background="@color/colorBackgroundSepia">
-
-        <com.google.android.material.appbar.CollapsingToolbarLayout
-            android:id="@+id/toolbar_layout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:fitsSystemWindows="true"
-            app:contentScrim="#4E342E"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:toolbarId="@+id/toolbarDetail" app:expandedTitleTextColor="@color/colorTextCream"
-            app:collapsedTitleTextColor="@color/colorTextCream">
-
-            <ImageView
-                android:id="@+id/imgStudentDetail"
-                android:layout_width="match_parent"
-                android:layout_height="250dp"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_profile"
-                app:layout_collapseMode="parallax"
-                android:contentDescription="Ảnh sinh viên" />
-
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbarDetail" android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                app:layout_collapseMode="pin"
-                app:navigationIcon="@drawable/ic_arrow_back"
-                app:navigationIconTint="@color/colorTextCream"
-                app:title="Tên Sinh Viên" />
-
-        </com.google.android.material.appbar.CollapsingToolbarLayout>
-    </com.google.android.material.appbar.AppBarLayout>
-
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -77,6 +40,7 @@
                 app:drawableStartCompat="@drawable/ic_phone"
                 android:drawablePadding="8dp"
                 app:drawableTint="@color/colorAccentGolden" />
+
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -116,6 +80,31 @@
                 android:textStyle="bold"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="8dp"/>
+
+            <LinearLayout
+                android:id="@+id/layoutCertificateActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnImportCertificates"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="Nhập (CSV)"
+                    android:textColor="@color/colorAccentGolden"/>
+
+                <Button
+                    android:id="@+id/btnExportCertificates"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="Xuất (CSV)"
+                    android:textColor="@color/colorAccentGolden"/>
+            </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvCertificates"

@@ -1,22 +1,31 @@
 package com.AnhQuoc.studentmanagementapp.student;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Toast;
+import android.widget.ImageView; // <-- Import quan trọng
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider; // <-- THÊM IMPORT
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.appcompat.widget.Toolbar; // <-- Import quan trọng
+
 import com.AnhQuoc.studentmanagementapp.R;
 import com.AnhQuoc.studentmanagementapp.databinding.ActivityStudentDetailsBinding;
 import com.AnhQuoc.studentmanagementapp.databinding.DialogAddCertificateBinding;
 import com.AnhQuoc.studentmanagementapp.model.Certificate;
 import com.AnhQuoc.studentmanagementapp.model.Student;
 import com.bumptech.glide.Glide;
-// KHÔNG CẦN import Firebase
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,16 +34,43 @@ public class StudentDetailsActivity extends AppCompatActivity {
     private ActivityStudentDetailsBinding binding;
     private String currentStudentId;
     private String currentUserRole;
-    private StudentDetailsViewModel viewModel; // <-- Biến ViewModel
+    private StudentDetailsViewModel viewModel;
     private CertificateAdapter certificateAdapter;
     private List<Certificate> certificateList;
+
+    // Các biến tìm thủ công để tránh lỗi cache
+    private Toolbar toolbar;
+    private ImageView studentImageView; // <-- Biến cho ImageView
+
+    // === LAUNCHER MỚI ===
+    private ActivityResultLauncher<String> importCertCsvLauncher;
+    private ActivityResultLauncher<Intent> exportCertCsvLauncher;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityStudentDetailsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        binding.toolbarDetail.setNavigationOnClickListener(v -> finish());
+
+        // === GIẢI PHÁP SỬA LỖI BUILD CACHE ===
+        // Chúng ta tìm thủ công các View đang bị lỗi cache
+        try {
+            // Đây là code đúng
+            toolbar = findViewById(R.id.toolbarDetail);
+            toolbar.setNavigationOnClickListener(v -> finish());
+
+            // Đây là code đúng
+            studentImageView = findViewById(R.id.imgStudentDetail);
+
+        } catch (Exception e) {
+            // (Nếu 'Invalidate Caches' được chạy, code sẽ không bao giờ nhảy vào đây)
+            Toast.makeText(this, "Lỗi nghiêm trọng: Không tìm thấy ID. Vui lòng 'Invalidate Caches / Restart'.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+        // === KẾT THÚC SỬA LỖI ===
+
 
         // 1. Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(StudentDetailsViewModel.class);
@@ -59,6 +95,9 @@ public class StudentDetailsActivity extends AppCompatActivity {
         setupButtonListeners();
         applyRoleBasedUI();
 
+        // === KHỞI TẠO LAUNCHER ===
+        setupActivityLaunchers();
+
         // 6. QUAN SÁT (OBSERVE) DỮ LIỆU TỪ VIEWMODEL
         observeViewModel();
     }
@@ -67,12 +106,18 @@ public class StudentDetailsActivity extends AppCompatActivity {
         // Quan sát thông tin sinh viên
         viewModel.getStudentLiveData().observe(this, student -> {
             if (student != null) {
-                binding.toolbarDetail.setTitle(student.getName());
+                if (toolbar != null) {
+                    toolbar.setTitle(student.getName());
+                }
+
+                // (Các view này không bị lỗi cache)
                 binding.tvDetailAge.setText("Tuổi: " + student.getAge());
                 binding.tvDetailPhone.setText("SĐT: " + student.getPhone());
+
+                // Sử dụng biến đã tìm thủ công
                 Glide.with(StudentDetailsActivity.this)
                         .load(R.drawable.ic_profile)
-                        .into(binding.imgStudentDetail);
+                        .into(studentImageView);
             }
         });
 
@@ -96,6 +141,14 @@ public class StudentDetailsActivity extends AppCompatActivity {
                 finish();
             }
         });
+
+        // === QUAN SÁT DỮ LIỆU EXPORT MỚI ===
+        viewModel.getExportCertCsvData().observe(this, csvData -> {
+            if (csvData != null && !csvData.isEmpty()) {
+                createFileForExport(csvData);
+                viewModel.getExportCertCsvData().setValue(null); // Reset
+            }
+        });
     }
 
     private void applyRoleBasedUI() {
@@ -103,10 +156,12 @@ public class StudentDetailsActivity extends AppCompatActivity {
             binding.btnEditStudent.setVisibility(View.GONE);
             binding.btnDeleteStudent.setVisibility(View.GONE);
             binding.fabAddCertificate.setVisibility(View.GONE);
+            binding.layoutCertificateActions.setVisibility(View.GONE); // Ẩn import/export
         } else {
             binding.btnEditStudent.setVisibility(View.VISIBLE);
             binding.btnDeleteStudent.setVisibility(View.VISIBLE);
             binding.fabAddCertificate.setVisibility(View.VISIBLE);
+            binding.layoutCertificateActions.setVisibility(View.VISIBLE); // Hiện import/export
         }
     }
 
@@ -139,7 +194,6 @@ public class StudentDetailsActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Yêu cầu ViewModel tải lại dữ liệu (vì có thể đã sửa)
         viewModel.refreshData();
     }
 
@@ -161,10 +215,56 @@ public class StudentDetailsActivity extends AppCompatActivity {
         });
 
         binding.fabAddCertificate.setOnClickListener(v -> showAddCertificateDialog());
+
+
+        // === GÁN SỰ KIỆN CHO NÚT MỚI ===
+        binding.btnImportCertificates.setOnClickListener(v -> {
+            importCertCsvLauncher.launch("text/csv");
+        });
+
+        binding.btnExportCertificates.setOnClickListener(v -> {
+            viewModel.exportCertificatesToCsv();
+        });
     }
 
-    // KHÔNG CẦN CÁC HÀM loadStudentData, deleteStudent, loadCertificates,
-    // saveCertificateToFirestore, deleteCertificateFromFirestore, updateCertificateInFirestore
+    private void setupActivityLaunchers() {
+        // Launcher cho Import
+        importCertCsvLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        viewModel.importCertificatesFromCsv(uri, getContentResolver());
+                    }
+                }
+        );
+
+        // Launcher cho Export
+        exportCertCsvLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getData();
+                        String csvData = viewModel.getExportCertCsvData.getValue();
+                        if (uri != null && csvData != null) {
+                            try (OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
+                                outputStream.write(csvData.getBytes(StandardCharsets.UTF_8));
+                                Toast.makeText(this, "Xuất tệp thành công!", Toast.LENGTH_SHORT).show();
+                            } catch (Exception e) {
+                                Toast.makeText(this, "Lỗi khi lưu tệp: " + e.getMessage(), Toast.SHORT).show();
+                            }
+                        }
+                    }
+                }
+        );
+    }
+
+    private void createFileForExport(String csvData) {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("text/csv");
+        intent.putExtra(Intent.EXTRA_TITLE, currentStudentId + "_certificates.csv");
+        exportCertCsvLauncher.launch(intent);
+    }
 
     private void showAddCertificateDialog() {
         DialogAddCertificateBinding dialogBinding = DialogAddCertificateBinding.inflate(LayoutInflater.from(this));
