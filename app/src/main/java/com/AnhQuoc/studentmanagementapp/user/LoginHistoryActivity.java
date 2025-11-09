@@ -1,27 +1,24 @@
 package com.AnhQuoc.studentmanagementapp.user;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider; // <-- THÊM IMPORT
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.AnhQuoc.studentmanagementapp.databinding.ActivityLoginHistoryBinding;
 import com.AnhQuoc.studentmanagementapp.model.LoginHistory;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+// KHÔNG CẦN import Firebase
 import java.util.ArrayList;
 import java.util.List;
 
 public class LoginHistoryActivity extends AppCompatActivity {
 
     private ActivityLoginHistoryBinding binding;
-    private FirebaseFirestore db;
+    private LoginHistoryViewModel viewModel; // <-- Biến ViewModel
     private LoginHistoryAdapter adapter;
     private List<LoginHistory> historyList;
     private String userIdToView;
-    private static final String TAG = "LoginHistoryActivity";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -29,10 +26,11 @@ public class LoginHistoryActivity extends AppCompatActivity {
         binding = ActivityLoginHistoryBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        db = FirebaseFirestore.getInstance();
+        // 1. Khởi tạo
         historyList = new ArrayList<>();
+        viewModel = new ViewModelProvider(this).get(LoginHistoryViewModel.class);
 
-        // Lấy User ID từ Intent
+        // 2. Lấy User ID
         if (getIntent().hasExtra("USER_ID_TO_VIEW")) {
             userIdToView = getIntent().getStringExtra("USER_ID_TO_VIEW");
         } else {
@@ -41,15 +39,27 @@ public class LoginHistoryActivity extends AppCompatActivity {
             return;
         }
 
-        // Cài đặt Toolbar
+        // 3. Cài đặt Toolbar
         binding.toolbarLoginHistory.setNavigationOnClickListener(v -> finish());
-        // (Tùy chọn: Bạn có thể set tiêu đề bằng tên user nếu muốn)
 
-        // Cài đặt RecyclerView
+        // 4. Cài đặt RecyclerView
         setupRecyclerView();
 
-        // Tải dữ liệu
-        loadLoginHistory();
+        // 5. QUAN SÁT (OBSERVE) DỮ LIỆU
+        viewModel.getHistoryListLiveData().observe(this, updatedList -> {
+            historyList.clear();
+            historyList.addAll(updatedList);
+            adapter.notifyDataSetChanged();
+        });
+
+        viewModel.getToastMessage().observe(this, message -> {
+            if (message != null && !message.isEmpty()) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // 6. Tải dữ liệu
+        viewModel.loadLoginHistory(userIdToView);
     }
 
     private void setupRecyclerView() {
@@ -58,32 +68,5 @@ public class LoginHistoryActivity extends AppCompatActivity {
         binding.rvLoginHistory.setAdapter(adapter);
     }
 
-    private void loadLoginHistory() {
-        if (userIdToView == null) return;
-
-        db.collection("users").document(userIdToView)
-                .collection("login_history")
-                .orderBy("timestamp", Query.Direction.DESCENDING) // Sắp xếp mới nhất lên đầu
-                .limit(50) // Giới hạn 50 bản ghi
-                .get()
-                .addOnCompleteListener(task -> {
-                    // === SỬA LỖI: Kiểm tra Activity có còn hoạt động không ===
-                    if (isFinishing() || isDestroyed()) {
-                        return;
-                    }
-                    // =======================================================
-
-                    if (task.isSuccessful()) {
-                        historyList.clear();
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            LoginHistory history = document.toObject(LoginHistory.class);
-                            historyList.add(history);
-                        }
-                        adapter.notifyDataSetChanged();
-                    } else {
-                        Log.w(TAG, "Error getting login history.", task.getException());
-                        Toast.makeText(this, "Lỗi khi tải lịch sử", Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
+    // KHÔNG CẦN HÀM loadLoginHistory() ở đây
 }

@@ -2,22 +2,21 @@ package com.AnhQuoc.studentmanagementapp.student;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast; // <-- DÒNG IMPORT ĐÃ ĐƯỢC THÊM VÀO ĐÂY
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider; // <-- THÊM IMPORT
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.AnhQuoc.studentmanagementapp.databinding.FragmentStudentListBinding;
 import com.AnhQuoc.studentmanagementapp.model.Student;
-import com.google.firebase.firestore.FirebaseFirestore;
+// KHÔNG CẦN import FirebaseFirestore
 import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,12 +24,11 @@ public class StudentListFragment extends Fragment {
 
     private FragmentStudentListBinding binding;
     private StudentAdapter studentAdapter;
-    private List<Student> studentList;
-    private FirebaseFirestore db;
+    private List<Student> studentList; // Vẫn cần list cho Adapter
+    // private FirebaseFirestore db; // Không cần
     private String currentUserRole;
 
-    private String currentSortField = "name";
-    private Query.Direction currentSortDirection = Query.Direction.ASCENDING;
+    private StudentListViewModel viewModel; // <-- Biến ViewModel
 
     @Nullable
     @Override
@@ -51,9 +49,11 @@ public class StudentListFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        db = FirebaseFirestore.getInstance();
+        // 1. Khởi tạo
         studentList = new ArrayList<>();
+        viewModel = new ViewModelProvider(this).get(StudentListViewModel.class);
 
+        // 2. Setup Adapter
         studentAdapter = new StudentAdapter(studentList, new StudentAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(Student student) {
@@ -67,6 +67,7 @@ public class StudentListFragment extends Fragment {
         binding.rvStudents.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.rvStudents.setAdapter(studentAdapter);
 
+        // 3. Phân quyền UI (Giữ nguyên)
         if ("Employee".equals(currentUserRole)) {
             binding.fabAddStudent.setVisibility(View.GONE);
             binding.btnSortStudents.setVisibility(View.GONE);
@@ -75,6 +76,20 @@ public class StudentListFragment extends Fragment {
             binding.btnSortStudents.setVisibility(View.VISIBLE);
         }
 
+        // 4. QUAN SÁT (OBSERVE) DỮ LIỆU TỪ VIEWMODEL
+        viewModel.getStudentListLiveData().observe(getViewLifecycleOwner(), updatedList -> {
+            studentList.clear();
+            studentList.addAll(updatedList);
+            studentAdapter.notifyDataSetChanged();
+        });
+
+        viewModel.getToastMessage().observe(getViewLifecycleOwner(), message -> {
+            if (message != null && !message.isEmpty() && getContext() != null) {
+                Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+            }
+        });
+
+        // 5. Setup Listeners
         binding.fabAddStudent.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), AddEditStudentActivity.class);
             startActivity(intent);
@@ -84,21 +99,22 @@ public class StudentListFragment extends Fragment {
             showSortDialog();
         });
 
-        loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
-
         binding.searchViewStudents.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                loadStudentsFromFirestore(query);
+                viewModel.loadStudentsFromFirestore(query);
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                loadStudentsFromFirestore(newText);
+                viewModel.loadStudentsFromFirestore(newText);
                 return true;
             }
         });
+
+        // 6. Tải dữ liệu ban đầu
+        viewModel.loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
     }
 
     private void showSortDialog() {
@@ -109,100 +125,59 @@ public class StudentListFragment extends Fragment {
                 "Tuổi (Giảm dần)"
         };
 
+        // Lấy trạng thái sắp xếp hiện tại từ ViewModel
         int checkedItem = 0;
-        if (currentSortField.equals("name") && currentSortDirection == Query.Direction.ASCENDING) {
+        String sortField = viewModel.getCurrentSortField();
+        Query.Direction direction = viewModel.getCurrentSortDirection();
+
+        if (sortField.equals("name") && direction == Query.Direction.ASCENDING) {
             checkedItem = 0;
-        } else if (currentSortField.equals("name") && currentSortDirection == Query.Direction.DESCENDING) {
+        } else if (sortField.equals("name") && direction == Query.Direction.DESCENDING) {
             checkedItem = 1;
-        } else if (currentSortField.equals("age") && currentSortDirection == Query.Direction.ASCENDING) {
+        } else if (sortField.equals("age") && direction == Query.Direction.ASCENDING) {
             checkedItem = 2;
-        } else if (currentSortField.equals("age") && currentSortDirection == Query.Direction.DESCENDING) {
+        } else if (sortField.equals("age") && direction == Query.Direction.DESCENDING) {
             checkedItem = 3;
         }
 
-        // === SỬA LỖI: Kiểm tra getContext() trước khi hiển thị Dialog ===
         if (getContext() == null) {
             return;
         }
-        // ============================================================
 
         new AlertDialog.Builder(getContext())
                 .setTitle("Sắp xếp danh sách")
                 .setSingleChoiceItems(sortOptions, checkedItem, (dialog, which) -> {
                     switch (which) {
                         case 0:
-                            currentSortField = "name";
-                            currentSortDirection = Query.Direction.ASCENDING;
+                            viewModel.setSortOrder("name", Query.Direction.ASCENDING);
                             break;
                         case 1:
-                            currentSortField = "name";
-                            currentSortDirection = Query.Direction.DESCENDING;
+                            viewModel.setSortOrder("name", Query.Direction.DESCENDING);
                             break;
                         case 2:
-                            currentSortField = "age";
-                            currentSortDirection = Query.Direction.ASCENDING;
+                            viewModel.setSortOrder("age", Query.Direction.ASCENDING);
                             break;
                         case 3:
-                            currentSortField = "age";
-                            currentSortDirection = Query.Direction.DESCENDING;
+                            viewModel.setSortOrder("age", Query.Direction.DESCENDING);
                             break;
                     }
-                    // === SỬA LỖI: Kiểm tra binding trước khi truy cập ===
                     if (binding != null) {
-                        loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
+                        viewModel.loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
                     }
-                    // ================================================
                     dialog.dismiss();
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
 
-    private void loadStudentsFromFirestore(String searchQuery) {
-
-        Query query;
-
-        if (searchQuery != null && !searchQuery.isEmpty()) {
-            query = db.collection("students")
-                    .orderBy("name")
-                    .startAt(searchQuery)
-                    .endAt(searchQuery + "\uf8ff");
-        } else {
-            query = db.collection("students").orderBy(currentSortField, currentSortDirection);
-        }
-
-        query.get()
-                .addOnCompleteListener(task -> {
-                    // === SỬA LỖI: Kiểm tra getContext() trước khi thực hiện bất kỳ hành động nào ===
-                    if (getContext() == null) {
-                        return; // Fragment đã bị hủy, không làm gì cả
-                    }
-                    // =========================================================================
-
-                    if (task.isSuccessful()) {
-                        studentList.clear();
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            Student student = document.toObject(Student.class);
-                            student.setStudentId(document.getId());
-                            studentList.add(student);
-                        }
-                        studentAdapter.notifyDataSetChanged();
-                    } else {
-                        Log.w("Firestore", "Error getting documents.", task.getException());
-                        // Đây là dòng đã gây lỗi (giờ đã an toàn)
-                        Toast.makeText(getContext(), "Lỗi khi tải: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                });
-    }
+    // KHÔNG CẦN HÀM loadStudentsFromFirestore() ở đây
 
     @Override
     public void onResume() {
         super.onResume();
-        // === SỬA LỖI: Kiểm tra binding trước khi truy cập ===
         if (binding != null) {
-            loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
+            viewModel.loadStudentsFromFirestore(binding.searchViewStudents.getQuery().toString());
         }
-        // ================================================
     }
 
     @Override
